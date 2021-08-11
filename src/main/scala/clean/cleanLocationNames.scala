@@ -1,7 +1,7 @@
 package clean
 
 import org.apache.spark.sql.{SaveMode, SparkSession}
-import org.apache.spark.sql.functions.{col, when}
+import org.apache.spark.sql.functions.{col, trim, when}
 
 object cleanLocationNames {
 
@@ -27,7 +27,9 @@ object cleanLocationNames {
       .load("raw_data/covid_19_data.csv")
     println("Covid_19_data.csv read")
     val dfP = df.withColumn("Province", when(col("Province/State").rlike("Diamond Princess"),
-      "Diamond Princess").when(col("Province/State")===col("Country/Region"), null).otherwise(col("Province/State")))
+      "Diamond Princess").when(col("Province/State").rlike("Grand Princess"),
+      "Grand Princess").when(col("Province/State")===col("Country/Region")||col("Province/State")==="None"||col("Province/State").rlike("Unknown"), null)
+      .otherwise(trim(col("Province/State"))))
 
     val dfProvince = dfP.drop(col("Province/State"))
 
@@ -35,8 +37,9 @@ object cleanLocationNames {
       "Country",
       when(
         col("Country/Region") === "('St. Martin',)",
-        "St. Martin"
-      ).otherwise(col("Country/Region"))
+        "St. Martin").when(col("Country/Region").rlike("Bahamas"),
+        "Bahamas").when(col("Country/Region").rlike("Gambia"),
+        "Gambia").otherwise(trim(col("Country/Region")))
     )
     val dfCountry = dfC.drop(col("Country/Region"))
 
