@@ -1,5 +1,9 @@
 import tools._
 import scala.io.StdIn.readLine
+
+import clean._
+
+
 import org.apache.spark.sql.SparkSession
 
 import org.apache.log4j.Logger
@@ -7,6 +11,7 @@ import org.apache.log4j.Level
 
 object Driver {
   def main(args: Array[String]): Unit = {
+    cleanLocationNames.begin()
     var run = true
     while(run){
       println("+++++++++++++++++++++++++++++")
