@@ -27,24 +27,20 @@ object Driver {
 object ToolsTester {
   def main(args: Array[String]): Unit = {
 
-    //Configure this if you're running HDFS locally
-    val spark_sql_warehouse_dir = "hdfs://localhost:9000/user/hive/warehouse"
-
-    //Dataset CSV paths (***NOTE: All CSV files are assumed to have column headers truncated)
-    val uid_lookup_path = "hdfs://localhost:9000/user/vincey/dataset/uid_lookup_table.csv"
-    val global_confirmed_path = "hdfs://localhost:9000/user/vincey/dataset/time_series_covid_19_confirmed.csv"
-    val global_deaths_path = "hdfs://localhost:9000/user/vincey/dataset/time_series_covid_19_deaths.csv"
-    val global_recovered_path = "hdfs://localhost:9000/user/vincey/dataset/time_series_covid_19_recovered.csv"
-    val us_confirmed_path = "hdfs://localhost:9000/user/vincey/dataset/time_series_covid_19_confirmed_US.csv"
-    val us_deaths_path = "hdfs://localhost:9000/user/vincey/dataset/time_series_covid_19_deaths_US.csv"
-
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
+
+    //Dataset CSV paths
+    val uid_lookup_path = "raw_data/uid_lookup_table.csv"
+    val global_confirmed_path = "raw_data/time_series_covid_19_confirmed.csv"
+    val global_deaths_path = "raw_data/time_series_covid_19_deaths.csv"
+    val global_recovered_path = "raw_data/time_series_covid_19_recovered.csv"
+    val us_confirmed_path = "raw_data/time_series_covid_19_confirmed_US.csv"
+    val us_deaths_path = "raw_data/time_series_covid_19_deaths_US.csv"
 
     val spark = SparkSession
       .builder()
       .config("spark.master", "local[*]")
-      .config("spark.sql.warehouse.dir", spark_sql_warehouse_dir)
       .appName("Spark-COVID")
       .getOrCreate()
     

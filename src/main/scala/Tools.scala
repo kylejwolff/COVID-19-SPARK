@@ -5,23 +5,30 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 
 object Loader {
-    def loadCSV(session: SparkSession, hdfs_path: String): RDD[String] = {
-        return session.sparkContext.textFile(hdfs_path)
+    def loadCSV(session: SparkSession, path: String, drop_header: Boolean=true): RDD[String] = {
+        if (drop_header) {
+            return session.sparkContext.textFile(path).mapPartitionsWithIndex {
+                        (idx, iter) => if (idx == 0) iter.drop(1) else iter 
+                    }
+        }
+        else {
+            return session.sparkContext.textFile(path)
+        }
     }
 }
 
 object Writer {
-    def writeCSV(data_df: DataFrame, hdfs_path: String, include_header: Boolean=false): Unit =  {
+    def writeCSV(data_df: DataFrame, path: String, include_header: Boolean=false): Unit =  {
         if (include_header) {
             data_df.
             write.
             option("header", true).
-            csv(hdfs_path)
+            csv(path)
         }
         else {
             data_df.
             write.
-            csv(hdfs_path)
+            csv(path)
         }
     }
 }
