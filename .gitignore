@@ -4,3 +4,6 @@
 /src/test/
 /target/
 /metastore_db/
+/clean_data/
+
+build.sbt
