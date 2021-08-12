@@ -11,7 +11,7 @@ import org.apache.log4j.Level
 
 object Driver {
   def main(args: Array[String]): Unit = {
-    cleanLocationNames.begin()
+    val df = cleanLocationNames.begin()
     var run = true
     while(run){
       println("+++++++++++++++++++++++++++++")
