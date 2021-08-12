@@ -8,6 +8,10 @@ import org.apache.spark.sql.SparkSession
 
 object Driver {
   def main(args: Array[String]): Unit = {
+    
+    Logger.getLogger("org").setLevel(Level.ERROR)
+    Logger.getLogger("akka").setLevel(Level.ERROR)
+
     val spark = SparkSession
       .builder()
       .appName("Last Updated tools.Cleaner")
@@ -38,12 +42,6 @@ object Driver {
           val global_recovered_path = "raw_data/time_series_covid_19_recovered.csv"
           val us_confirmed_path = "raw_data/time_series_covid_19_confirmed_US.csv"
           val us_deaths_path = "raw_data/time_series_covid_19_deaths_US.csv"
-
-//          val spark = SparkSession
-//            .builder()
-//            .config("spark.master", "local[*]")
-//            .appName("Spark-COVID")
-//            .getOrCreate()
 
           // Test Case 1: Load, clean, display and count rows in UID Lookup Table
           val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
