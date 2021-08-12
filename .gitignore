@@ -8,6 +8,7 @@
 /.bloop/
 /.metals/
 /.vscode/
+/.DS_Store/
 build.sbt
 
 
