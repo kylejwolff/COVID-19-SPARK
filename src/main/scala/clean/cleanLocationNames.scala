@@ -6,18 +6,25 @@ import org.apache.spark.sql.functions.{col, trim, when}
 object cleanLocationNames {
 
   def main(args: Array[String]): Unit = {
-    begin()
+        val spark = SparkSession
+          .builder
+          .appName("Cleaning Province and Country Data")
+          .config("spark.master", "local")
+          .enableHiveSupport()
+          .getOrCreate()
+        spark.sparkContext.setLogLevel("WARN")
+    begin(spark)
   }
-  def begin(): Unit={
+  def begin(spark: SparkSession): Unit={
     System.setProperty("hadoop.home.dir", "C:\\winutils")
 
-    val spark = SparkSession
-      .builder
-      .appName("Cleaning Province and Country Data")
-      .config("spark.master", "local")
-      .enableHiveSupport()
-      .getOrCreate()
-    spark.sparkContext.setLogLevel("WARN")
+//    val spark = SparkSession
+//      .builder
+//      .appName("Cleaning Province and Country Data")
+//      .config("spark.master", "local")
+//      .enableHiveSupport()
+//      .getOrCreate()
+//    spark.sparkContext.setLogLevel("WARN")
 
 
     //Read data into dataframe
