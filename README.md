@@ -7,15 +7,23 @@ name := "COVID-19-SPARK"
 
 version := "0.1"
 
+<<<<<<< HEAD
+scalaVersion := "2.12.10"
+=======
 scalaVersion := "2.11.12"
+>>>>>>> main
 
 libraryDependencies ++= Seq(
   // https://mvnrepository.com/artifact/org.apache.spark/spark-core
   "org.apache.spark" %% "spark-core" % "3.1.2",
   // https://mvnrepository.com/artifact/org.apache.spark/spark-sql
+<<<<<<< HEAD
+  "org.apache.spark" %% "spark-sql" % "3.1.2"
+=======
   "org.apache.spark" %% "spark-sql" % "3.1.2",
   // https://mvnrepository.com/artifact/org.apache.spark/spark-hive
   "org.apache.spark" %% "spark-hive" % "3.1.2"
+>>>>>>> main
 )
 ````
 
