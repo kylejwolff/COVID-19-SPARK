@@ -3,7 +3,13 @@
 /project/
 /src/test/
 /target/
-
+/metastore_db/
+/clean_data/
 /.bloop/
 /.metals/
 /.vscode/
+/.DS_Store/
+build.sbt
+
+
+
