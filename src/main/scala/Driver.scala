@@ -103,12 +103,17 @@ object QueryTester {
     val global_confirmed = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
     val global_deaths = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_deaths_path))
     val global_recovered = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
-
     val global_merged = Query.mergeGlobal(global_confirmed, global_deaths, global_recovered)
 
     global_merged.show()
     println(global_merged.count())
-    println(global_merged.columns.foreach(println))
+
+    val us_confirmed = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_confirmed_path))
+    val us_deaths = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_deaths_path), with_population=true)
+    val us_merged = Query.mergeUS(us_confirmed, us_deaths)
+
+    us_merged.show()
+    println(us_merged.count())
 
     spark.stop()
   }

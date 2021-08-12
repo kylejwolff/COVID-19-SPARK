@@ -35,44 +35,64 @@ object Writer {
 
 object Cleaner {
 
-    case class UIDLookupRow(uid:Int, iso2:String, iso3:String, code3:Int, FIPS:Int, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, population:Int)
-    case class GlobalTimeSeriesRow(region:String, country:String, latitude:Float, longitude:Float, counts:Array[Int])
-    case class USTimeSeriesRow(uid:Int, iso2:String, iso3:String, code3:Int, FIPS:Int, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, counts:Array[Int])
+    case class UIDLookupRow(uid:Integer, iso2:String, iso3:String, code3:Integer, FIPS:Integer, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, population:Integer)
+    case class GlobalTimeSeriesRow(region:String, country:String, latitude:Float, longitude:Float, counts:Array[Integer])
+    case class USTimeSeriesRow(uid:Integer, iso2:String, iso3:String, code3:Integer, FIPS:Integer, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, counts:Array[Integer], population: Integer=null.asInstanceOf[Integer])
+
+    private def castInteger(value: String): Integer = {
+        return if (value == null) null.asInstanceOf[Integer] else Integer.parseInt(value)
+    }
 
     def cleanGlobalTimeSeries(session: SparkSession, data_rdd: RDD[String]): DataFrame = {
         return session.createDataFrame(data_rdd.
-            map(x => x.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")). // str.split(pattern, -1) is to treat lines terminating with , as the final column having empty string
+            map(x => x.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")). // str.split(pattern, -1) is to treat lines terminating with "," as the final column having empty string
             map(x => x.map(y => y.replaceAll("\"", "")).map(y => if (y.length == 0) null else y)).
-            map(x => GlobalTimeSeriesRow(x(0), x(1), if (x(2) == null) 0F else x(2).toFloat, if (x(3) == null) 0F else x(3).toFloat, x.slice(4, x.length - 1).map(y => if (y == null) 0 else y.toInt))))
+            map(x => GlobalTimeSeriesRow(x(0), x(1), if (x(2) == null) 0F else x(2).toFloat, if (x(3) == null) 0F else x(3).toFloat, x.slice(4, x.length - 1).map(y => castInteger(y)))))
     }
 
-    def cleanUSTimeSeries(session: SparkSession, data_rdd: RDD[String]): DataFrame = {
-        return session.createDataFrame(data_rdd.
-            map(x => x.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")). // str.split(pattern, -1) is to treat lines terminating with , as the final column having empty string
-            map(x => x.map(y => y.replaceAll("\"", "")).map(y => if (y.length == 0) null else y)).
-            map(x => USTimeSeriesRow(x(0).toInt, x(1), x(2), if (x(3) == null) 0 else x(3).toInt, if (x(4) == null) 0 else x(4).toFloat.toInt, x(5), x(6), x(7), if (x(8) == null) 0F else x(8).toFloat, if (x(9) == null) 0F else x(9).toFloat, x(10), x.slice(11, x.length - 1).map(y => if (y == null) 0 else y.toInt))))
+    def cleanUSTimeSeries(session: SparkSession, data_rdd: RDD[String], with_population: Boolean=false): DataFrame = {
+        val us_rdd = data_rdd.
+            map(x => x.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)")). // str.split(pattern, -1) is to treat lines terminating with "," as the final column having empty string
+            map(x => x.map(y => y.replaceAll("\"", "")).map(y => if (y.length == 0) null else y))
+
+        if (with_population) {
+            return session.createDataFrame(us_rdd.
+                map(x => USTimeSeriesRow(x(0).toInt, x(1), x(2), if (x(3) == null) 0 else x(3).toInt, if (x(4) == null) 0 else x(4).toFloat.toInt, x(5), x(6), x(7), if (x(8) == null) 0F else x(8).toFloat, if (x(9) == null) 0F else x(9).toFloat, x(10), x.slice(12, x.length - 1).map(y => castInteger(y)), population=castInteger(x(11)))))
+        }
+        else {
+            return session.createDataFrame(us_rdd.
+                map(x => USTimeSeriesRow(x(0).toInt, x(1), x(2), if (x(3) == null) 0 else x(3).toInt, if (x(4) == null) 0 else x(4).toFloat.toInt, x(5), x(6), x(7), if (x(8) == null) 0F else x(8).toFloat, if (x(9) == null) 0F else x(9).toFloat, x(10), x.slice(11, x.length - 1).map(y => castInteger(y)))))
+        }
     }
 
     def cleanUIDLookup(session: SparkSession, data_rdd: RDD[String]): DataFrame = {
         return session.createDataFrame(data_rdd.
-            map(x => x.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)). // str.split(pattern, -1) is to treat lines terminating with , as the final column having empty string
+            map(x => x.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)). // str.split(pattern, -1) is to treat lines terminating with "," as the final column having empty string
             map(x => x.map(y => y.replaceAll("\"", "")).map(y => if (y.length == 0) null else y)).
-            map(x => UIDLookupRow(x(0).toInt, x(1), x(2), if (x(3) == null) 0 else x(3).toInt, if (x(4) == null) 0 else x(4).toInt, x(5), x(6), x(7), if (x(8) == null) 0F else x(8).toFloat, if (x(9) == null) 0F else x(9).toFloat, x(10), if (x(11) == null) 0 else x(11).toInt)))
+            map(x => UIDLookupRow(x(0).toInt, x(1), x(2), castInteger(x(3)), castInteger(x(4)), x(5), x(6), x(7), if (x(8) == null) 0F else x(8).toFloat, if (x(9) == null) 0F else x(9).toFloat, x(10), if (x(11) == null) 0 else x(11).toInt)))
     }
 }
 
 object Query {
     def mergeGlobal(confirmed_df: DataFrame, deaths_df: DataFrame, recovered_df: DataFrame): DataFrame = {
-        return confirmed_df.
-            join(deaths_df, ($"confirmed_df.region" <=> $"deaths_df.region") && ($"confirmed_df.country" <=> $"deaths_df.country"), "outer").
-            alias("confirmed_deaths_df").
-            join(recovered_df, ($"confirmed_deaths_df.region" <=> $"recovered_df.region") && ($"confirmed_deaths_df.country" <=> $"recovered_df.country"), "outer").
-            alias("merged_global_df")
-            //select($"region", $"country", confirmed_df("longitude"), confirmed_df("counts").as("confirmed"), deaths_df("counts").as("deaths"), recovered_df("counts").as("recovered"))
+        val confirmed_deaths_df = confirmed_df.
+            join(deaths_df, (confirmed_df("region") <=> deaths_df("region")) && (confirmed_df("country") <=> deaths_df("country")), "outer").
+            select(confirmed_df("*"), deaths_df("counts").as("deaths")).
+            withColumnRenamed("counts", "confirmed")
+
+        val merged_global_df = confirmed_deaths_df.
+            join(recovered_df, (confirmed_deaths_df("region") <=> recovered_df("region")) && (confirmed_deaths_df("country") <=> recovered_df("country")), "outer").
+            select(confirmed_deaths_df("*"), recovered_df("counts").as("recovered"))
+
+        return merged_global_df
     }
 
     def mergeUS(confirmed_df: DataFrame, deaths_df: DataFrame): DataFrame = {
-        return confirmed_df.
-            join(deaths_df, (confirmed_df("region") === deaths_df("region")) && (confirmed_df("country") === deaths_df("country")), "inner")
+        val merged_us_df = confirmed_df.
+            join(deaths_df, confirmed_df("uid") <=> deaths_df("uid"), "outer").
+            select(confirmed_df("*"), deaths_df("counts").as("deaths"), deaths_df("population")).
+            withColumnRenamed("counts", "confirmed")
+
+        return merged_us_df
     }
 }
