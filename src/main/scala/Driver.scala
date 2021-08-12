@@ -77,3 +77,39 @@ object ToolsTester {
     spark.stop()
   }
 }
+
+
+object QueryTester {
+  def main(args: Array[String]): Unit = {
+
+    Logger.getLogger("org").setLevel(Level.ERROR)
+    Logger.getLogger("akka").setLevel(Level.ERROR)
+
+    //Dataset CSV paths
+    val uid_lookup_path = "raw_data/uid_lookup_table.csv"
+    val global_confirmed_path = "raw_data/time_series_covid_19_confirmed.csv"
+    val global_deaths_path = "raw_data/time_series_covid_19_deaths.csv"
+    val global_recovered_path = "raw_data/time_series_covid_19_recovered.csv"
+    val us_confirmed_path = "raw_data/time_series_covid_19_confirmed_US.csv"
+    val us_deaths_path = "raw_data/time_series_covid_19_deaths_US.csv"
+
+    val spark = SparkSession
+      .builder()
+      .config("spark.master", "local[*]")
+      .appName("Spark-COVID")
+      .getOrCreate()
+
+    val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
+    val global_confirmed = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
+    val global_deaths = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_deaths_path))
+    val global_recovered = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
+
+    val global_merged = Query.mergeGlobal(global_confirmed, global_deaths, global_recovered)
+
+    global_merged.show()
+    println(global_merged.count())
+    println(global_merged.columns.foreach(println))
+
+    spark.stop()
+  }
+}

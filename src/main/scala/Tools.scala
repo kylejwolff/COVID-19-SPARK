@@ -60,3 +60,19 @@ object Cleaner {
             map(x => UIDLookupRow(x(0).toInt, x(1), x(2), if (x(3) == null) 0 else x(3).toInt, if (x(4) == null) 0 else x(4).toInt, x(5), x(6), x(7), if (x(8) == null) 0F else x(8).toFloat, if (x(9) == null) 0F else x(9).toFloat, x(10), if (x(11) == null) 0 else x(11).toInt)))
     }
 }
+
+object Query {
+    def mergeGlobal(confirmed_df: DataFrame, deaths_df: DataFrame, recovered_df: DataFrame): DataFrame = {
+        return confirmed_df.
+            join(deaths_df, ($"confirmed_df.region" <=> $"deaths_df.region") && ($"confirmed_df.country" <=> $"deaths_df.country"), "outer").
+            alias("confirmed_deaths_df").
+            join(recovered_df, ($"confirmed_deaths_df.region" <=> $"recovered_df.region") && ($"confirmed_deaths_df.country" <=> $"recovered_df.country"), "outer").
+            alias("merged_global_df")
+            //select($"region", $"country", confirmed_df("longitude"), confirmed_df("counts").as("confirmed"), deaths_df("counts").as("deaths"), recovered_df("counts").as("recovered"))
+    }
+
+    def mergeUS(confirmed_df: DataFrame, deaths_df: DataFrame): DataFrame = {
+        return confirmed_df.
+            join(deaths_df, (confirmed_df("region") === deaths_df("region")) && (confirmed_df("country") === deaths_df("country")), "inner")
+    }
+}
