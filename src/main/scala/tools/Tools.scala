@@ -3,6 +3,8 @@ package tools
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.P
+import javax.xml.crypto.Data
 
 object Loader {
     def loadCSV(session: SparkSession, path: String, drop_header: Boolean=true): RDD[String] = {
@@ -18,15 +20,24 @@ object Loader {
 }
 
 object Writer {
-    def writeCSV(data_df: DataFrame, path: String, include_header: Boolean=false): Unit =  {
+    def writeCSV(data_df: DataFrame, path: String, include_header: Boolean=false, single_file: Boolean=true): Unit =  {
+        var new_df: DataFrame = null
+
+        if (single_file) {
+            new_df = data_df.coalesce(1)
+        }
+        else {
+            new_df = data_df
+        }
+
         if (include_header) {
-            data_df.
+            new_df.
             write.
             option("header", true).
             csv(path)
         }
         else {
-            data_df.
+            new_df.
             write.
             csv(path)
         }
