@@ -3,6 +3,9 @@ import scala.io.StdIn.readLine
 
 import clean._
 
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
@@ -107,15 +110,10 @@ object QueryTester {
     val global_recovered = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
     val global_merged = Query.mergeGlobal(global_confirmed, global_deaths, global_recovered)
 
-    global_merged.show()
-    println(global_merged.count())
+    val start_date = LocalDate.parse("01-22-2020", DateTimeFormatter.ofPattern("MM-dd-yyyy"))
+    val global_confirmed_unpacked = Query.getGlobalCountUnpacked(global_merged, "confirmed", start_date)
 
-    val us_confirmed = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_confirmed_path))
-    val us_deaths = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_deaths_path), with_population=true)
-    val us_merged = Query.mergeUS(us_confirmed, us_deaths)
-
-    us_merged.show()
-    println(us_merged.count())
+    global_confirmed_unpacked.show()
 
     spark.stop()
   }
