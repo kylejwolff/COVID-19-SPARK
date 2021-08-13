@@ -7,16 +7,17 @@ import org.apache.spark.sql.functions.{col, trim, when}
 object cleanLocationNames {
 
   def main(args: Array[String]): Unit = {
-    begin()
-  }
-  def begin(): sql.DataFrame={
-
-
     val spark = SparkSession
-      .builder
-      .appName("Cleaning Province and Country Data")
+      .builder()
+      .appName("Clean Location Names")
       .config("spark.master", "local")
       .getOrCreate()
+    begin(spark)
+  }
+  def begin(spark: SparkSession): sql.DataFrame={
+
+
+
     spark.sparkContext.setLogLevel("WARN")
 
 
