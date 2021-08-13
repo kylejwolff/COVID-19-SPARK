@@ -17,7 +17,6 @@ object Driver {
       .builder()
       .appName("Last Updated tools.Cleaner")
       .config("spark.master", "local")
-      .enableHiveSupport()
       .getOrCreate()
     println("created spark session")
     spark.sparkContext.setLogLevel("ERROR")
@@ -34,7 +33,7 @@ object Driver {
       val userEntry = readLine()
       userEntry match {
         case "1" => LastUpdateCleaner.clean(spark)
-        case "2" => cleanLocationNames.begin(spark)
+        case "2" => val cleanedNames = cleanLocationNames.begin(spark)
         case "3" => {
           //Dataset CSV paths
           val uid_lookup_path = "raw_data/uid_lookup_table.csv"
