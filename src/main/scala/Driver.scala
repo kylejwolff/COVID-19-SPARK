@@ -3,11 +3,16 @@ import scala.io.StdIn.readLine
 
 import clean._
 
-
 import org.apache.spark.sql.SparkSession
+import org.apache.log4j.Logger
+import org.apache.log4j.Level
 
 object Driver {
   def main(args: Array[String]): Unit = {
+    
+    Logger.getLogger("org").setLevel(Level.ERROR)
+    Logger.getLogger("akka").setLevel(Level.ERROR)
+
     val spark = SparkSession
       .builder()
       .appName("Last Updated tools.Cleaner")
@@ -38,12 +43,6 @@ object Driver {
           val global_recovered_path = "raw_data/time_series_covid_19_recovered.csv"
           val us_confirmed_path = "raw_data/time_series_covid_19_confirmed_US.csv"
           val us_deaths_path = "raw_data/time_series_covid_19_deaths_US.csv"
-
-//          val spark = SparkSession
-//            .builder()
-//            .config("spark.master", "local[*]")
-//            .appName("Spark-COVID")
-//            .getOrCreate()
 
           // Test Case 1: Load, clean, display and count rows in UID Lookup Table
           val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
@@ -83,3 +82,42 @@ object Driver {
   }
 }
 
+object QueryTester {
+  def main(args: Array[String]): Unit = {
+
+    Logger.getLogger("org").setLevel(Level.ERROR)
+    Logger.getLogger("akka").setLevel(Level.ERROR)
+
+    //Dataset CSV paths
+    val uid_lookup_path = "raw_data/uid_lookup_table.csv"
+    val global_confirmed_path = "raw_data/time_series_covid_19_confirmed.csv"
+    val global_deaths_path = "raw_data/time_series_covid_19_deaths.csv"
+    val global_recovered_path = "raw_data/time_series_covid_19_recovered.csv"
+    val us_confirmed_path = "raw_data/time_series_covid_19_confirmed_US.csv"
+    val us_deaths_path = "raw_data/time_series_covid_19_deaths_US.csv"
+
+    val spark = SparkSession
+      .builder()
+      .config("spark.master", "local[*]")
+      .appName("Spark-COVID")
+      .getOrCreate()
+
+    val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
+    val global_confirmed = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
+    val global_deaths = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_deaths_path))
+    val global_recovered = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
+    val global_merged = Query.mergeGlobal(global_confirmed, global_deaths, global_recovered)
+
+    global_merged.show()
+    println(global_merged.count())
+
+    val us_confirmed = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_confirmed_path))
+    val us_deaths = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_deaths_path), with_population=true)
+    val us_merged = Query.mergeUS(us_confirmed, us_deaths)
+
+    us_merged.show()
+    println(us_merged.count())
+
+    spark.stop()
+  }
+}
