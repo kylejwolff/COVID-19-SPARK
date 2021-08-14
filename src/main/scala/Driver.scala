@@ -72,7 +72,7 @@ object Driver {
           println(us_confirmed.count())
 
           // Test Case 6: Load, clean, display and count rows in US Deaths Timeseries
-          val us_deaths = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_deaths_path))
+          val us_deaths = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_deaths_path), with_population=true)
           us_deaths.show()
           println(us_deaths.count())
         }
@@ -90,7 +90,10 @@ object QueryTester {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    //Dataset CSV paths
+    // Constant
+    val start_date = LocalDate.parse("01-22-2020", DateTimeFormatter.ofPattern("MM-dd-yyyy"))
+
+    // Dataset CSV paths
     val uid_lookup_path = "raw_data/uid_lookup_table.csv"
     val global_confirmed_path = "raw_data/time_series_covid_19_confirmed.csv"
     val global_deaths_path = "raw_data/time_series_covid_19_deaths.csv"
@@ -104,16 +107,25 @@ object QueryTester {
       .appName("Spark-COVID")
       .getOrCreate()
 
-    val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
-    val global_confirmed = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
-    val global_deaths = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_deaths_path))
-    val global_recovered = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
-    val global_merged = Query.mergeGlobal(global_confirmed, global_deaths, global_recovered)
+    // Test Case 1: Load, clean, display and count rows in US Confirmed Timeseries Vertical
+    val us_vertical_confirmed = Cleaner.cleanUSTimeSeries_Vertical(spark, Loader.loadCSV(spark, us_confirmed_path), start_date)
+    us_vertical_confirmed.show()
+    println(us_vertical_confirmed.count())
 
-    val start_date = LocalDate.parse("01-22-2020", DateTimeFormatter.ofPattern("MM-dd-yyyy"))
-    val global_confirmed_unpacked = Query.getGlobalCountUnpacked(global_merged, "confirmed", start_date)
+    // Test Case 2: Load, clean, display and count rows in US Deaths Timeseries Vertical
+    val us_vertical_deaths = Cleaner.cleanUSTimeSeries_Vertical(spark, Loader.loadCSV(spark, us_deaths_path), start_date, with_population=true)
+    us_vertical_deaths.show()
+    println(us_vertical_deaths.count())
 
-    global_confirmed_unpacked.show()
+    // Test Case 3: Merge & display US Confirmed & Deaths Timeseries Vertical
+    val us_vertical_merged = Query.mergeUSVertical(us_vertical_confirmed, us_vertical_deaths)
+    us_vertical_merged.show()
+    println(us_vertical_merged.count())
+
+    // Test Case 4: Query & display US Merged Timeseries Vertical
+    val us_vertical_count = Query.getUSCountVertical(us_vertical_merged)
+    us_vertical_count.show()
+    println(us_vertical_count.count())
 
     spark.stop()
   }
