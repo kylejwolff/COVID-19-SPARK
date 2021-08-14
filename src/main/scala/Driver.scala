@@ -35,7 +35,7 @@ object Driver {
       println("Enter a menu option from the list:")
       val userEntry = readLine()
       userEntry match {
-        case "1" => LastUpdateCleaner.clean(spark)
+        case "1" => LastUpdateCleaner.cleanCSV(spark)
         case "2" => val cleanedNames = cleanLocationNames.begin(spark)
         case "3" => {
           //Dataset CSV paths

@@ -1,6 +1,7 @@
 package tools
 
-import org.apache.spark.sql.{AnalysisException, SparkSession}
+import org.apache.spark.sql.{AnalysisException, SparkSession, DataFrame, Row}
+import org.apache.spark.rdd.RDD
 
 import java.text.SimpleDateFormat
 
@@ -11,15 +12,15 @@ object LastUpdateCleaner {
       .builder()
       .appName("Last Updated tools.Cleaner")
       .config("spark.master", "local")
-      .enableHiveSupport()
+      //.enableHiveSupport()
       .getOrCreate()
     println("created spark session")
     spark.sparkContext.setLogLevel("ERROR")
-    clean(spark)
+    cleanCSV(spark)
     spark.stop()
 
   }
-  def clean(spark: SparkSession): Unit = {
+  def cleanCSV(spark: SparkSession): Unit = {
     print("Cleaning \"Last Update\" from covid_19_data.csv...")
     val covidRDD = spark.sparkContext.textFile("raw_data/covid_19_data.csv")
       .mapPartitionsWithIndex((index, line) => if(index == 0) line.drop(1) else line)
@@ -40,6 +41,21 @@ object LastUpdateCleaner {
       case e: AnalysisException => println(e.message)
     }
 
+  }
+
+  def cleanDF(spark: SparkSession, covid_19_dataframe: DataFrame): DataFrame = {
+    print("Cleaning \"Last Update\" from covid_19_dataframe...")
+    val covidRDD = covid_19_dataframe.rdd
+      .map(line => line.toString)
+      .mapPartitionsWithIndex((index, line) => if(index == 0) line.drop(1) else line)
+      .map(line => line.split(","))
+      .map(x => x.map(y => y.replaceAll("\\d{1,2}/\\d{1,2}/\\d{2,4} \\d{1,2}:\\d{2}", formatDate(y))))
+      .map(x => x.map(y => y.replaceAll("\\d{2,4}-\\d{1,2}-\\d{1,2}T? ?\\d{1,2}:\\d{1,2}:\\d{1,2}", formatDate(y))))
+      .map(x => (x(0),x(1),x(2),x(3),x(4),x(5),x(6),x(7)))
+    val covidDF = spark.createDataFrame(covidRDD)
+      .toDF("SNo","ObservationDate","State","Country","Last Update",
+        "Confirmed","Deaths","Recovered")
+    return covidDF
   }
   def formatDate(line: String): String = {
     if(line.matches("^\\d{1,2}/\\d{1,2}/\\d{2,4} \\d{1,2}:\\d{2}$")){
