@@ -191,7 +191,7 @@ object Query {
             drop("country")
     }
 
-    def getGrowth(df: DataFrame, which: String, partition_col: String, vertical: Boolean=false): DataFrame = {
+    def getGrowth(df: DataFrame, which: String, partition_col: String=null, vertical: Boolean=false): DataFrame = {
         if (vertical) {
             val df_with_lagged = df.
                 withColumn(s"${which}_lagged", lag(which, 1, null.asInstanceOf[Integer]).over(Window.partitionBy(partition_col).orderBy("date")))
@@ -210,6 +210,6 @@ object Query {
         val calculateGrowthUDF = udf(calculateGrowth _)
 
         return df.
-            withColumn("growth", calculateGrowthUDF(df(which)))
+            withColumn(s"${which}_growth", calculateGrowthUDF(df(which)))
     }
 }

@@ -127,6 +127,13 @@ object QueryTester {
     println(us_deaths_growth.first.getAs[scala.collection.mutable.WrappedArray[String]]("counts").mkString(","))
     println(us_deaths_growth.first.getAs[scala.collection.mutable.WrappedArray[String]]("growth").mkString(","))
 
+    // Test Case 5: Load, clean US Confirmed Timeseries growths & unpack
+    val global_confirmed = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
+    val global_confirmed_growth2 = Query.getGrowth(global_confirmed.withColumnRenamed("counts", "confirmed"), "confirmed")
+    val global_confirmed_growth2_unpacked = Query.getGlobalCountUnpacked(global_confirmed_growth2, "confirmed_growth", start_date)
+
+    global_confirmed_growth2_unpacked.show()
+
     spark.stop()
   }
 }
