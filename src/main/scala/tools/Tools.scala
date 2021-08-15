@@ -3,9 +3,10 @@ package tools
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions.{lag, udf}
+import org.apache.spark.sql.expressions.Window
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import javax.xml.crypto.Data
 
 object Loader {
     def loadCSV(session: SparkSession, path: String, drop_header: Boolean=true): RDD[String] = {
@@ -188,5 +189,27 @@ object Query {
         return us_vertical_df.
             select("*").
             drop("country")
+    }
+
+    def getGrowth(df: DataFrame, which: String, partition_col: String, vertical: Boolean=false): DataFrame = {
+        if (vertical) {
+            val df_with_lagged = df.
+                withColumn(s"${which}_lagged", lag(which, 1, null.asInstanceOf[Integer]).over(Window.partitionBy(partition_col).orderBy("date")))
+                
+            return df_with_lagged.
+                withColumn(s"${which}_growth", df(which).minus(df_with_lagged(s"${which}_lagged"))).
+                drop(s"${which}_lagged")
+        }
+
+        def calculateGrowth(counts: Array[Integer]): Array[Integer] = {
+            return Array[Integer](null.asInstanceOf[Integer]) ++ counts.slice(1, counts.length).
+                zip(counts.slice(0, counts.length - 1)).
+                map{case (a, b) => (a - b).asInstanceOf[Integer]}
+        }
+
+        val calculateGrowthUDF = udf(calculateGrowth _)
+
+        return df.
+            withColumn("growth", calculateGrowthUDF(df(which)))
     }
 }
