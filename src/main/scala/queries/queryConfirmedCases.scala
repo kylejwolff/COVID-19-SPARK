@@ -30,9 +30,9 @@ object queryConfirmedCases {
 
     val countryRates = spark.sql("SELECT g.Country, (element_at(g.counts,466)/u.Population) transmitionRate FROM global_confirmed g join uid_lookup u " +
       "on g.Country = u.Country where u.region is null order by transmitionRate desc")
-    regionRates.show()
-    Writer.writeCSV(regionRates, "out/trans_by_region.csv", true)
-    Writer.writeCSV(countryRates, "out/trans_by_country.csv", true)
+    //regionRates.show()
+    Writer.writeCSV(regionRates, "out/trans_by_region.csv", true, true)
+    Writer.writeCSV(countryRates, "out/trans_by_country.csv", true, true)
 
   }
 
@@ -44,8 +44,8 @@ object queryConfirmedCases {
       "FROM global_confirmed g join uid_lookup u on g.latitude = u.latitude where u.latitude<23.5 and u.latitude>-23.5 order by transmitionRate desc")
     val nonTropical = spark.sql("SELECT (sum(element_at(g.counts,466))), (sum(u.Population)),(sum(element_at(g.counts,466))/sum(u.Population)) transmitionRate " +
       "FROM global_confirmed g join uid_lookup u on g.latitude = u.latitude where u.latitude>23.5 or u.latitude<-23.5 order by transmitionRate desc")
-    Writer.writeCSV(tropical, "out/trans_tropical.csv", true)
-    Writer.writeCSV(nonTropical, "out/trans_nonTropical.csv", true)
+    Writer.writeCSV(tropical, "out/trans_tropical.csv", true, true)
+    Writer.writeCSV(nonTropical, "out/trans_nonTropical.csv", true, true)
 
   }
 
