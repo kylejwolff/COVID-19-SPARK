@@ -28,11 +28,11 @@ object TransmissionRates {
     val df1 = cleanLocationNames.begin(spark)
     val df2 = LastUpdateCleaner.cleanDF(spark,df1)
     df2.createOrReplaceTempView("global_confirmed")
-    // val df3 = spark.sql("SELECT g.country country, SUM(g.confirmed) confirmed " +
-    //   "FROM (SELECT country, state, MAX(confirmed) confirmed FROM global_confirmed WHERE confirmed is not null GROUP BY state, country) g " +
-    //   "GROUP BY g.country " +
-    //   "ORDER BY g.country")
-    spark.sql("SELECT country, state, MAX(confirmed) confirmed FROM global_confirmed WHERE confirmed is not null GROUP BY state, country").show()
-    //Writer.writeCSV(df3, "out/trans_by_country_by_season.csv", true, true)
+    val df3 = spark.sql("SELECT * " +
+      "FROM (SELECT g.country country, SUM(g.confirmed) confirmed FROM (SELECT country, state, MAX(confirmed) confirmed FROM global_confirmed GROUP BY state, country) AS g GROUP BY g.country) " +
+      "WHERE confirmed is not null " +
+      "ORDER BY country")//.show(200)
+    // spark.sql("SELECT country, state, MAX(confirmed) confirmed FROM global_confirmed WHERE confirmed is not null GROUP BY state, country").show()
+    Writer.writeCSV(df3, "out/trans_by_country_by_season.csv", true, true)
   }
 }
