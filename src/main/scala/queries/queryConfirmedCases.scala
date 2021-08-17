@@ -27,7 +27,7 @@ object queryConfirmedCases {
 
   }
 
-  def queryPerCapita(spark: SparkSession, global_confirmed: DataFrame, uid_lookup:DataFrame) =  {
+  def queryPerCapita(spark: SparkSession, global_confirmed: DataFrame, uid_lookup:DataFrame):DataFrame =  {
     global_confirmed.createOrReplaceTempView("global_confirmed")
     uid_lookup.createOrReplaceTempView("uid_lookup")
     //global_confirmed.show()
@@ -40,6 +40,8 @@ object queryConfirmedCases {
     //regionRates.show()
     Writer.writeCSV(regionRates, "out/trans_by_region.csv", true, true)
     Writer.writeCSV(countryRates, "out/trans_by_country.csv", true, true)
+
+    return countryRates
 
   }
 
@@ -54,9 +56,11 @@ object queryConfirmedCases {
     Writer.writeCSV(tropical, "out/trans_tropical.csv", true, true)
     Writer.writeCSV(nonTropical, "out/trans_nonTropical.csv", true, true)
 
+    tropical.show()
+    nonTropical.show()
   }
 
-  def queryDeathRates(spark: SparkSession, global_deaths: DataFrame, global_confirmed: DataFrame): Unit ={
+  def queryDeathRates(spark: SparkSession, global_deaths: DataFrame, global_confirmed: DataFrame): DataFrame ={
     global_deaths.createOrReplaceTempView("global_deaths")
     global_confirmed.createOrReplaceTempView("global_confirmed")
     val deathRates = spark.sql("SELECT d.country, (d.counts) as Deaths, r.counts as Cases from global_deaths d " +
@@ -76,7 +80,7 @@ object queryConfirmedCases {
     //deathData.show()
     Writer.writeCSV(withRate, "out/rateQuery", true, true)
 
-
+    return withRate
   }
 
 }
