@@ -1,6 +1,7 @@
 package queries
 
 import org.apache.spark.sql
+import org.apache.spark.sql.functions.{arrays_zip, col, explode}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import tools._
 
@@ -15,14 +16,14 @@ object queryConfirmedCases {
     val global_confirmed_path = "raw_data/time_series_covid_19_confirmed.csv"
     val uid_lookup_path = "raw_data/uid_lookup_table.csv"
     //val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
-    //val global_confirmed = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
+    val global_confirmed = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
     //queryPerCapita(spark, global_confirmed, uid_lookup)
     //queryTropical(spark, global_confirmed, uid_lookup)
     val global_deaths_path = "raw_data/time_series_covid_19_deaths.csv"
-    val global_recovered_path = "raw_data/time_series_covid_19_recovered.csv"
+    //val global_recovered_path = "raw_data/time_series_covid_19_recovered.csv"
     val global_deaths = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_deaths_path))
-    val global_recovered = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
-    queryDeathRates(spark, global_deaths, global_recovered)
+    //val global_recovered = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
+    queryDeathRates(spark, global_deaths, global_confirmed)
 
   }
 
@@ -55,11 +56,27 @@ object queryConfirmedCases {
 
   }
 
-  def queryDeathRates(spark: SparkSession, global_deaths: DataFrame, global_recovered: DataFrame): Unit ={
+  def queryDeathRates(spark: SparkSession, global_deaths: DataFrame, global_confirmed: DataFrame): Unit ={
     global_deaths.createOrReplaceTempView("global_deaths")
-    global_recovered.createOrReplaceTempView("global_recovered")
-    val deathRates = spark.sql("SELECT d.country, (d.counts) as Deaths, r.counts as Recoveries from global_deaths d " +
-    "join global_recovered r on d.country = r.country where d.country in ('US','India', 'Germany', 'Japan', 'Brazil', 'Nigeria')").show()
+    global_confirmed.createOrReplaceTempView("global_confirmed")
+    val deathRates = spark.sql("SELECT d.country, (d.counts) as Deaths, r.counts as Cases from global_deaths d " +
+    "join global_confirmed r on d.country = r.country where d.country in ('US','India', 'Germany', 'Japan', 'Brazil', 'Nigeria') order by d.country asc")
+    val recoveredData = deathRates.withColumn("vars", explode(arrays_zip(col("Deaths"),col("Cases")))).select(
+      "Country", "vars.Deaths", "vars.Cases")
+    val withRate = recoveredData.withColumn("Death Rate", col("Deaths")/col("Cases"))
+    withRate.show()
+    //deathRates.coalesce(1).write.option("header",true).save("out/death_arrays")
+    /*
+    val deathData = deathRates.select(
+      col("country") +: (70 until 466).map(i => (col("Deaths")(i))/(col("Cases")(i-7)).alias(s"Death Rate as of Day $i since 1/22/2020")): _*
+    )
+    */
+
+
+    //deathData.show()
+    Writer.writeCSV(withRate, "out/rateQuery", true, true)
+
+
   }
 
 }
