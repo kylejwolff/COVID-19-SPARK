@@ -23,6 +23,5 @@
 
 // libraryDependencies ++= Seq(
 //   "org.apache.spark" % "spark-core_2.11" % "2.4.8",
-//   "org.apache.spark" % "spark-sql_2.11" % "2.4.8",
-//   "org.apache.spark" %% "spark-hive" % "2.4.8"
+//   "org.apache.spark" % "spark-sql_2.11" % "2.4.8"
 // )
