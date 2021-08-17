@@ -2,6 +2,7 @@ import tools._
 import scala.io.StdIn.readLine
 
 import clean._
+import queries._
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -26,6 +27,18 @@ object Driver {
 
   def query_3(global_merged_df: DataFrame, start_date: LocalDate): Unit = {
     Query.getGlobalCountUnpacked(Query.getGrowth(global_merged_df, "confirmed"), "confirmed_growth", start_date).show()
+  }
+
+  def query_4(spark: SparkSession, global_confirmed: DataFrame, uid_lookup: DataFrame): Unit ={
+    queries.queryConfirmedCases.queryPerCapita(spark, global_confirmed, uid_lookup).show()
+  }
+
+  def query_5(spark: SparkSession, global_confirmed: DataFrame, uid_lookup: DataFrame): Unit ={
+    queries.queryConfirmedCases.queryTropical(spark, global_confirmed, uid_lookup)
+  }
+
+  def query_6(spark: SparkSession, global_deaths: DataFrame, global_confirmed: DataFrame): Unit ={
+    queries.queryConfirmedCases.queryDeathRates(spark, global_deaths, global_confirmed).show()
   }
 
   def main(args: Array[String]): Unit = {
@@ -90,6 +103,9 @@ object Driver {
       println("+ 1 - Query 1: Global Confirmed Cases (Unpacked)               +")
       println("+ 2 - Query 2: Global Confirmed Cases (Vertical)               +")
       println("+ 3 - Query 3: Global Confirmed Cases Daily Growth (Unpacked)  +")
+      println("+ 4 - Query 4: Global Confirmed Cases Each Country             +")
+      println("+ 5 - Query 5: Global Cases Tropical and Non-tropical Countries+")
+      println("+ 6 - Query 6: Global Death Rates                              +")
       println("+ x - Exit the program                                         +")
       println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
       println("Enter a menu option from the list:")
@@ -104,6 +120,9 @@ object Driver {
         case "1" => query_1(global_merged_timeseries, start_date)
         case "2" => query_2(global_merged_timeseries_vertical)
         case "3" => query_3(global_merged_timeseries, start_date)
+        case "4" => query_4(spark, global_confirmed_timeseries, uid_lookup)
+        case "5" => query_5(spark, global_confirmed_timeseries, uid_lookup)
+        case "6" => query_6(spark, global_deaths_timeseries, global_confirmed_timeseries)
         case "x" => run = false
         case _ =>
       }
