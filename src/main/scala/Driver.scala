@@ -18,26 +18,67 @@ object Driver {
   }
 
   def query_1(global_merged_df: DataFrame, start_date: LocalDate): Unit = {
+    /*
+      Query 1: Global Confirmed Cases (Unpacked)
+      
+      Description: Selects only the confirmed cases from the merged global data and 
+        unpack the arrays in the "confirmed" column into a single column for every date-value.
+    */
+
     Query.getGlobalCountUnpacked(global_merged_df, "confirmed", start_date).show()
   }
 
   def query_2(global_merged_vertical_df: DataFrame): Unit = {
+    /*
+      Query 2: Global Confirmed Cases (Vertical)
+      
+      Description: Using the row-based timeseries of the merged global data, 
+        selects only the confirmed cases of country-level entries from the merged global data.
+        Region-level entries are omitted to prevent duplicates.
+    */
+
     Query.getGlobalCountVertical(global_merged_vertical_df).drop("deaths", "recovered").show()
   }
 
   def query_3(global_merged_df: DataFrame, start_date: LocalDate): Unit = {
+    /*
+      Query 3: Global Confirmed Cases Daily Growth (Unpacked)
+      
+      Description: Using the merged global data, creates an additional column "confirmed_growth" for daily growths of "confirmed".
+        Selects only the "confirmed_growth" from the resulting query and unpack into a single column for every date-value.
+        The "confirmed_growth" column indicates the daily difference in confirmed cases.
+    */
+
     Query.getGlobalCountUnpacked(Query.getGrowth(global_merged_df, "confirmed"), "confirmed_growth", start_date).show()
   }
 
   def query_4(spark: SparkSession, global_confirmed: DataFrame, uid_lookup: DataFrame): Unit ={
+    /*
+      Query 4: Global Confirmed Cases Each Country
+
+      Description: Using the global confirmed cases data, gets the incidence rate of covid in each country by dividing the
+      final number of confirmed cases by that countries population. Also return the number of confirmed cases and population.
+    */
     queries.queryConfirmedCases.queryPerCapita(spark, global_confirmed, uid_lookup).show()
   }
 
   def query_5(spark: SparkSession, global_confirmed: DataFrame, uid_lookup: DataFrame): Unit ={
+    /*
+      Query 5: Global Cases Tropical and Non-tropical Countries
+
+      Description: Using the global confirmed cases data, for countries with latitudes that make them tropical sums the
+      confirmed cases and population to get a total incidence rate. Then does the same for country outside the tropical range.
+    */
     queries.queryConfirmedCases.queryTropical(spark, global_confirmed, uid_lookup)
   }
 
   def query_6(spark: SparkSession, global_deaths: DataFrame, global_confirmed: DataFrame): Unit ={
+    /*
+      Query 6: Global Death Rates
+
+      Description: Using the global deaths data, for the countries of Brazil, Germany, India, Japan, Nigeria, and US gets the
+      confirmed cases, deaths, and death rate at each date in the dataset.
+    */
     queries.queryConfirmedCases.queryDeathRates(spark, global_deaths, global_confirmed).show()
   }
 
@@ -98,16 +139,16 @@ object Driver {
     var run = true
 
     while(run) {
-      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-      println("+ Main Menu                                                    +")
-      println("+ 1 - Query 1: Global Confirmed Cases (Unpacked)               +")
-      println("+ 2 - Query 2: Global Confirmed Cases (Vertical)               +")
-      println("+ 3 - Query 3: Global Confirmed Cases Daily Growth (Unpacked)  +")
-      println("+ 4 - Query 4: Global Confirmed Cases Each Country             +")
-      println("+ 5 - Query 5: Global Cases Tropical and Non-tropical Countries+")
-      println("+ 6 - Query 6: Global Death Rates                              +")
-      println("+ x - Exit the program                                         +")
-      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+      println("+ Main Menu                                                      +")
+      println("+ 1 - Query 1: Global Confirmed Cases (Unpacked)                 +")
+      println("+ 2 - Query 2: Global Confirmed Cases (Vertical)                 +")
+      println("+ 3 - Query 3: Global Confirmed Cases Daily Growth (Unpacked)    +")
+      println("+ 4 - Query 4: Global Confirmed Cases Each Country               +")
+      println("+ 5 - Query 5: Global Cases Tropical and Non-tropical Countries  +")
+      println("+ 6 - Query 6: Global Death Rates                                +")
+      println("+ x - Exit the program                                           +")
+      println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
       println("Enter a menu option from the list:")
 
       val userEntry = readLine()
