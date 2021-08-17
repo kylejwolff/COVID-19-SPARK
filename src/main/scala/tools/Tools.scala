@@ -138,7 +138,6 @@ object Query {
 
     def mergeUS(confirmed_df: DataFrame, deaths_df: DataFrame): DataFrame = {
         val merged_us_df = confirmed_df.
-            drop("population").
             join(deaths_df, confirmed_df("uid") <=> deaths_df("uid"), "outer").
             select(confirmed_df("*"), deaths_df("counts").as("deaths"), deaths_df("population")).
             withColumnRenamed("counts", "confirmed")
@@ -170,7 +169,6 @@ object Query {
 
     def mergeUSVertical(confirmed_vertical_df: DataFrame, deaths_vertical_df: DataFrame): DataFrame = {
         val merged_us_vertical_df = confirmed_vertical_df.
-            drop("population").
             join(deaths_vertical_df, (confirmed_vertical_df("uid") <=> deaths_vertical_df("uid") && confirmed_vertical_df("date") <=> deaths_vertical_df("date")), "outer").
             select(confirmed_vertical_df("*"), deaths_vertical_df("counts").as("deaths"), deaths_vertical_df("population")).
             withColumnRenamed("counts", "confirmed")
