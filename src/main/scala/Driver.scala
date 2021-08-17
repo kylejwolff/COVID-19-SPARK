@@ -53,14 +53,32 @@ object Driver {
   }
 
   def query_4(spark: SparkSession, global_confirmed: DataFrame, uid_lookup: DataFrame): Unit ={
+    /*
+      Query 4: Global Confirmed Cases Each Country
+
+      Description: Using the global confirmed cases data, gets the incidence rate of covid in each country by dividing the
+      final number of confirmed cases by that countries population. Also return the number of confirmed cases and population.
+    */
     queries.queryConfirmedCases.queryPerCapita(spark, global_confirmed, uid_lookup).show()
   }
 
   def query_5(spark: SparkSession, global_confirmed: DataFrame, uid_lookup: DataFrame): Unit ={
+    /*
+      Query 5: Global Cases Tropical and Non-tropical Countries
+
+      Description: Using the global confirmed cases data, for countries with latitudes that make them tropical sums the
+      confirmed cases and population to get a total incidence rate. Then does the same for country outside the tropical range.
+    */
     queries.queryConfirmedCases.queryTropical(spark, global_confirmed, uid_lookup)
   }
 
   def query_6(spark: SparkSession, global_deaths: DataFrame, global_confirmed: DataFrame): Unit ={
+    /*
+      Query 6: Global Death Rates
+
+      Description: Using the global deaths data, for the countries of Brazil, Germany, India, Japan, Nigeria, and US gets the
+      confirmed cases, deaths, and death rate at each date in the dataset.
+    */
     queries.queryConfirmedCases.queryDeathRates(spark, global_deaths, global_confirmed).show()
   }
 
