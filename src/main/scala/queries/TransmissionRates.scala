@@ -12,33 +12,33 @@ import org.apache.log4j.Level
 
 
 object TransmissionRates {
-  def main(args: Array[String]): Unit = {
+  // def main(args: Array[String]): Unit = {
 
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
+  //   Logger.getLogger("org").setLevel(Level.ERROR)
+  //   Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    val spark = SparkSession
-      .builder
-      .appName("Queries")
-      .config("spark.master", "local")
-      .getOrCreate()
-    spark.sparkContext.setLogLevel("ERROR")
-    val df = usPercentByQuarter(spark)
-    df.show()
-    spark.stop()
-  }
+  //   val spark = SparkSession
+  //     .builder
+  //     .appName("Queries")
+  //     .config("spark.master", "local")
+  //     .getOrCreate()
+  //   spark.sparkContext.setLogLevel("ERROR")
+  //   val df = usPercentByQuarter(spark)
+  //   df.show()
+  //   spark.stop()
+  // }
 
-  def usPercentByQuarter(spark: SparkSession): DataFrame = {
-    val df = spark.read.format("csv")
-      .option("inferSchema", "true")
-      .option("header", "true")
-      .load("raw_data/covid_19_data.csv")
-    val df1 = cleanLocationNames.begin(spark, df)
-    val df2 = LastUpdateCleaner.cleanDF(spark,df1)
-    val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
+  def usPercentByQuarter(spark: SparkSession, cleanedNames: DataFrame, uid: DataFrame): DataFrame = {
+    // val df = spark.read.format("csv")
+    //   .option("inferSchema", "true")
+    //   .option("header", "true")
+    //   .load("raw_data/covid_19_data.csv")
+    // val df1 = cleanLocationNames.begin(spark, df)
+    // val df2 = LastUpdateCleaner.cleanDF(spark,df1)
+    // val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
     val us_pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
 
-    val usq = df2.select(df2("country"), df2("state"), df2("date"), df2("confirmed"))
+    val usq = cleanedNames.select(cleanedNames("country"), cleanedNames("state"), cleanedNames("date"), cleanedNames("confirmed"))
       .withColumn("confirmed", col("confirmed").cast("int"))
       .groupBy("state", "country", "date").max("confirmed")
       .select("country", "date", "max(confirmed)")
@@ -136,17 +136,10 @@ object TransmissionRates {
     return uspercentbyquarter
   }
 
-  def usAllPercentByQuarter(spark: SparkSession): DataFrame = {
-    val df = spark.read.format("csv")
-      .option("inferSchema", "true")
-      .option("header", "true")
-      .load("raw_data/covid_19_data.csv")
-    val df1 = cleanLocationNames.begin(spark, df)
-    val df2 = LastUpdateCleaner.cleanDF(spark,df1)
-    val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
+  def usAllPercentByQuarter(spark: SparkSession, cleanedNames: DataFrame, uid: DataFrame): DataFrame = {
     val us_pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
 
-    val usq = df2.select(df2("country"), df2("state"), df2("date"), df2("confirmed"), df2("deaths"), df2("recovered"))
+    val usq = cleanedNames.select(cleanedNames("country"), cleanedNames("state"), cleanedNames("date"), cleanedNames("confirmed"), cleanedNames("deaths"), cleanedNames("recovered"))
       .withColumn("confirmed", col("confirmed").cast("int"))
       .withColumn("deaths", col("deaths").cast("int"))
       .withColumn("recovered", col("recovered").cast("int"))
@@ -281,21 +274,13 @@ object TransmissionRates {
     val usallpercent = usq1allpercent.union(usq2allpercent).union(usq3allpercent).union(usq4allpercent).union(usq5allpercent).union(usq6allpercent)
     val windowSpec = Window.partitionBy("country").orderBy("country")
     val usallpercentbyquarter = usallpercent.withColumn("quarter",row_number.over(windowSpec))
-    // //Writer.writeCSV(uspercentbyquarter, "out/us_percent_by_quarter", true, true)
     return usallpercentbyquarter
   }
 
-  def globalPercentByQuarter(spark: SparkSession): DataFrame = {
-    val df = spark.read.format("csv")
-      .option("inferSchema", "true")
-      .option("header", "true")
-      .load("raw_data/covid_19_data.csv")
-    val df1 = cleanLocationNames.begin(spark, df)
-    val df2 = LastUpdateCleaner.cleanDF(spark,df1)
-    val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
+  def globalPercentByQuarter(spark: SparkSession, cleanedNames: DataFrame, uid: DataFrame): DataFrame = {
     val pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
 
-    val gq = df2.select(df2("country"), df2("state"), df2("date"), df2("confirmed"))
+    val gq = cleanedNames.select(cleanedNames("country"), cleanedNames("state"), cleanedNames("date"), cleanedNames("confirmed"))
       .withColumn("confirmed", col("confirmed").cast("int"))
       .groupBy("state", "country", "date").max("confirmed")
       .select("country", "date", "max(confirmed)")
