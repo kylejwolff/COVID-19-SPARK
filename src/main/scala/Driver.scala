@@ -81,6 +81,35 @@ object Driver {
     Queries.getDeathRates(spark, global_deaths, global_confirmed).show()
   }
 
+  def query_7(spark: SparkSession, cleanedNames: DataFrame, uid_lookup: DataFrame): Unit ={
+    /*
+      Query 7: US Confirmed Cases Per Capita by quarter
+
+      Description: Using covid_19_data.csv, returns the confirmed cases per capita in the United States by quarter.
+    */
+    queries.TransmissionRates.usPercentByQuarter(spark, cleanedNames, uid_lookup).show()
+  }
+
+  def query_8(spark: SparkSession, cleanedNames: DataFrame, uid_lookup: DataFrame): Unit ={
+    /*
+      Query 8: US Confirmed Cases, Deaths, and Recovered Per Capita by quarter
+
+      Description: Using covid_19_data.csv, returns the confirmed cases, deaths,
+      and recovered cases per capita in the United States by quarter.
+    */
+    queries.TransmissionRates.usAllPercentByQuarter(spark, cleanedNames, uid_lookup).show()
+  }
+
+  def query_9(spark: SparkSession, cleanedNames: DataFrame, uid_lookup: DataFrame): Unit ={
+    /*
+      Query 9: Global Confirmed Cases Per Capita by quarter
+
+      Description: Using covid_19_data.csv, returns the confirmed cases per capita
+      for each country by quarter.
+    */
+    queries.TransmissionRates.globalPercentByQuarter(spark, cleanedNames, uid_lookup).show()
+  }
+
   def main(args: Array[String]): Unit = {
     
     Logger.getLogger("org").setLevel(Level.ERROR)
@@ -162,6 +191,9 @@ object Driver {
         case "4" => query_4(spark, global_confirmed_timeseries, uid_lookup)
         case "5" => query_5(spark, global_confirmed_timeseries, uid_lookup)
         case "6" => query_6(spark, global_deaths_timeseries, global_confirmed_timeseries)
+        case "7" => query_7(spark, cleanedNames, uid_lookup)
+        case "8" => query_8(spark, cleanedNames, uid_lookup)
+        case "9" => query_9(spark, cleanedNames, uid_lookup)
         case "x" => run = false
         case _ =>
       }
