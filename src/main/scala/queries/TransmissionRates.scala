@@ -23,16 +23,14 @@ object TransmissionRates {
       .config("spark.master", "local")
       .getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
-    val df = globalPercentByQuarter(spark)
+    val df = usPercentByQuarter(spark)
     df.show()
     spark.stop()
   }
 
   def usPercentByQuarter(spark: SparkSession): DataFrame = {
     val df1 = cleanLocationNames.begin(spark)
-    val df2 = LastUpdateCleaner.cleanDF(spark,df1).cache()
-    df2.createOrReplaceTempView("global_confirmed")
-    val uid_rdd = spark.sparkContext.textFile("raw_data/uid_lookup_table.csv")
+    val df2 = LastUpdateCleaner.cleanDF(spark,df1)
     val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
     val us_pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
 
@@ -115,7 +113,7 @@ object TransmissionRates {
 
     //US Q6
     val usq6 = usq.select(usq("country"), usq("date"), usq("confirmed"))
-      .where(usq("country") === "US" && usq("date").like("%2021") && usq("date").between("03/31/2020","06/30/2020"))
+      .where(usq("country") === "US" && usq("date").like("%2021") && usq("date").between("03/31/2021","06/30/2021"))
     val usq6min = usq6.select(usq6("country"), usq6("date"), usq6("confirmed"))
       .groupBy("country").min("confirmed")
     val usq6max = usq6.select(usq6("country"), usq6("date"), usq6("confirmed"))
@@ -130,17 +128,160 @@ object TransmissionRates {
     val uspercent = usq1percent.union(usq2percent).union(usq3percent).union(usq4percent).union(usq5percent).union(usq6percent)
     val windowSpec = Window.partitionBy("country").orderBy("country")
     val uspercentbyquarter = uspercent.withColumn("quarter",row_number.over(windowSpec))
-    //Writer.writeCSV(uspercentbyquarter, "out/us_percent_by_quarter", true, true)
-    return uspercentbyquarter.withColumn("quarter",row_number.over(windowSpec))
+    Writer.writeCSV(uspercentbyquarter, "out/us_percent_by_quarter", true, true)
+    return uspercentbyquarter
+  }
+
+  def usAllPercentByQuarter(spark: SparkSession): DataFrame = {
+    val df1 = cleanLocationNames.begin(spark)
+    val df2 = LastUpdateCleaner.cleanDF(spark,df1)
+    val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
+    val us_pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
+
+    val usq = df2.select(df2("country"), df2("state"), df2("date"), df2("confirmed"), df2("deaths"), df2("recovered"))
+      .withColumn("confirmed", col("confirmed").cast("int"))
+      .withColumn("deaths", col("deaths").cast("int"))
+      .withColumn("recovered", col("recovered").cast("int"))
+      .groupBy("state", "country", "date").max("confirmed", "deaths", "recovered")
+      .select("country", "date", "max(confirmed)", "max(deaths)", "max(recovered)")
+      .groupBy("country", "date").sum("max(confirmed)", "max(deaths)", "max(recovered)")
+      .withColumnRenamed("sum(max(confirmed))", "confirmed")
+      .withColumnRenamed("sum(max(deaths))", "deaths")
+      .withColumnRenamed("sum(max(recovered))", "recovered").cache()
+
+
+    //US Q1 ALL PERCENT
+    val usq1 = usq.select(usq("country"), usq("date"), usq("confirmed"), usq("deaths"), usq("recovered"))
+      .where(usq("country") === "US" && usq("date").like("%2020") && usq("date").between("01/01/2020","03/31/2020"))
+    val usq1min = usq1.select(usq1("country"), usq1("date"), usq1("confirmed"), usq1("deaths"), usq1("recovered"))
+      .groupBy("country").min("confirmed", "deaths", "recovered")
+    val usq1max = usq1.select(usq1("country"), usq1("date"), usq1("confirmed"), usq1("deaths"), usq1("recovered"))
+      .groupBy("country").max("confirmed", "deaths", "recovered")
+    val usq1all = usq1min.join(usq1max, (usq1min("country") <=> usq1max("country")), "inner")
+      .select(usq1min("country"), (usq1max("max(confirmed)") - usq1min("min(confirmed)")),
+      (usq1max("max(deaths)") - usq1min("min(deaths)")), (usq1max("max(recovered)") - usq1min("min(recovered)")))
+      .withColumnRenamed("(max(confirmed) - min(confirmed))", "q1_confirmed")
+      .withColumnRenamed("(max(deaths) - min(deaths))", "q1_deaths")
+      .withColumnRenamed("(max(recovered) - min(recovered))", "q1_recovered")
+    val usq1allpercent = usq1all.join(us_pop, (us_pop("country") <=> usq1all("country")), "inner")
+      .select(usq1all("country"), (usq1all("q1_confirmed") / us_pop("population")),
+      (usq1all("q1_deaths") / us_pop("population")), (usq1all("q1_recovered") / us_pop("population")))
+      .withColumnRenamed("(q1_confirmed / population)", "% new confirmed per capita")
+      .withColumnRenamed("(q1_deaths / population)", "% deaths per capita")
+      .withColumnRenamed("(q1_recovered / population)", "% recovered per capita")
+
+    //US Q2 ALL PERCENT
+    val usq2 = usq.select(usq("country"), usq("date"), usq("confirmed"), usq("deaths"), usq("recovered"))
+      .where(usq("country") === "US" && usq("date").like("%2020") && usq("date").between("03/31/2020","06/30/2020"))
+    val usq2min = usq2.select(usq2("country"), usq2("date"), usq2("confirmed"), usq2("deaths"), usq2("recovered"))
+      .groupBy("country").min("confirmed", "deaths", "recovered")
+    val usq2max = usq2.select(usq2("country"), usq2("date"), usq2("confirmed"), usq2("deaths"), usq2("recovered"))
+      .groupBy("country").max("confirmed", "deaths", "recovered")
+    val usq2all = usq2min.join(usq2max, (usq2min("country") <=> usq2max("country")), "inner")
+      .select(usq2min("country"), (usq2max("max(confirmed)") - usq2min("min(confirmed)")),
+      (usq2max("max(deaths)") - usq2min("min(deaths)")), (usq2max("max(recovered)") - usq2min("min(recovered)")))
+      .withColumnRenamed("(max(confirmed) - min(confirmed))", "q1_confirmed")
+      .withColumnRenamed("(max(deaths) - min(deaths))", "q1_deaths")
+      .withColumnRenamed("(max(recovered) - min(recovered))", "q1_recovered")
+    val usq2allpercent = usq2all.join(us_pop, (us_pop("country") <=> usq2all("country")), "inner")
+      .select(usq2all("country"), (usq2all("q1_confirmed") / us_pop("population")),
+      (usq2all("q1_deaths") / us_pop("population")), (usq2all("q1_recovered") / us_pop("population")))
+      .withColumnRenamed("(q1_confirmed / population)", "% new confirmed per capita")
+      .withColumnRenamed("(q1_deaths / population)", "% deaths per capita")
+      .withColumnRenamed("(q1_recovered / population)", "% recovered per capita")
+
+    //US Q3 ALL PERCENT
+    val usq3 = usq.select(usq("country"), usq("date"), usq("confirmed"), usq("deaths"), usq("recovered"))
+      .where(usq("country") === "US" && usq("date").like("%2020") && usq("date").between("06/30/2020","08/30/2020"))
+    val usq3min = usq3.select(usq3("country"), usq3("date"), usq3("confirmed"), usq3("deaths"), usq3("recovered"))
+      .groupBy("country").min("confirmed", "deaths", "recovered")
+    val usq3max = usq3.select(usq3("country"), usq3("date"), usq3("confirmed"), usq3("deaths"), usq3("recovered"))
+      .groupBy("country").max("confirmed", "deaths", "recovered")
+    val usq3all = usq3min.join(usq3max, (usq3min("country") <=> usq3max("country")), "inner")
+      .select(usq3min("country"), (usq3max("max(confirmed)") - usq3min("min(confirmed)")),
+      (usq3max("max(deaths)") - usq3min("min(deaths)")), (usq3max("max(recovered)") - usq3min("min(recovered)")))
+      .withColumnRenamed("(max(confirmed) - min(confirmed))", "q1_confirmed")
+      .withColumnRenamed("(max(deaths) - min(deaths))", "q1_deaths")
+      .withColumnRenamed("(max(recovered) - min(recovered))", "q1_recovered")
+    val usq3allpercent = usq3all.join(us_pop, (us_pop("country") <=> usq3all("country")), "inner")
+      .select(usq3all("country"), (usq3all("q1_confirmed") / us_pop("population")),
+      (usq3all("q1_deaths") / us_pop("population")), (usq3all("q1_recovered") / us_pop("population")))
+      .withColumnRenamed("(q1_confirmed / population)", "% new confirmed per capita")
+      .withColumnRenamed("(q1_deaths / population)", "% deaths per capita")
+      .withColumnRenamed("(q1_recovered / population)", "% recovered per capita")
+
+    //US Q4 ALL PERCENT
+    val usq4 = usq.select(usq("country"), usq("date"), usq("confirmed"), usq("deaths"), usq("recovered"))
+      .where(usq("country") === "US" && usq("date").like("%2020") && usq("date").between("08/30/2020","12/31/2020"))
+    val usq4min = usq4.select(usq4("country"), usq4("date"), usq4("confirmed"), usq4("deaths"), usq4("recovered"))
+      .groupBy("country").min("confirmed", "deaths", "recovered")
+    val usq4max = usq4.select(usq4("country"), usq4("date"), usq4("confirmed"), usq4("deaths"), usq4("recovered"))
+      .groupBy("country").max("confirmed", "deaths", "recovered")
+    val usq4all = usq4min.join(usq4max, (usq4min("country") <=> usq4max("country")), "inner")
+      .select(usq4min("country"), (usq4max("max(confirmed)") - usq4min("min(confirmed)")),
+      (usq4max("max(deaths)") - usq4min("min(deaths)")), (usq4max("max(recovered)") - usq4min("min(recovered)")))
+      .withColumnRenamed("(max(confirmed) - min(confirmed))", "q1_confirmed")
+      .withColumnRenamed("(max(deaths) - min(deaths))", "q1_deaths")
+      .withColumnRenamed("(max(recovered) - min(recovered))", "q1_recovered")
+    val usq4allpercent = usq4all.join(us_pop, (us_pop("country") <=> usq4all("country")), "inner")
+      .select(usq4all("country"), (usq4all("q1_confirmed") / us_pop("population")),
+      (usq4all("q1_deaths") / us_pop("population")), (usq4all("q1_recovered") / us_pop("population")))
+      .withColumnRenamed("(q1_confirmed / population)", "% new confirmed per capita")
+      .withColumnRenamed("(q1_deaths / population)", "% deaths per capita")
+      .withColumnRenamed("(q1_recovered / population)", "% recovered per capita")
+
+    //US Q5 ALL PERCENT
+    val usq5 = usq.select(usq("country"), usq("date"), usq("confirmed"), usq("deaths"), usq("recovered"))
+      .where(usq("country") === "US" && usq("date").like("%2021") && usq("date").between("01/01/2021","03/31/2021"))
+    val usq5min = usq5.select(usq5("country"), usq5("date"), usq5("confirmed"), usq5("deaths"), usq5("recovered"))
+      .groupBy("country").min("confirmed", "deaths", "recovered")
+    val usq5max = usq5.select(usq5("country"), usq5("date"), usq5("confirmed"), usq5("deaths"), usq5("recovered"))
+      .groupBy("country").max("confirmed", "deaths", "recovered")
+    val usq5all = usq5min.join(usq5max, (usq5min("country") <=> usq5max("country")), "inner")
+      .select(usq5min("country"), (usq5max("max(confirmed)") - usq5min("min(confirmed)")),
+      (usq5max("max(deaths)") - usq5min("min(deaths)")), (usq5max("max(recovered)") - usq5min("min(recovered)")))
+      .withColumnRenamed("(max(confirmed) - min(confirmed))", "q1_confirmed")
+      .withColumnRenamed("(max(deaths) - min(deaths))", "q1_deaths")
+      .withColumnRenamed("(max(recovered) - min(recovered))", "q1_recovered")
+    val usq5allpercent = usq5all.join(us_pop, (us_pop("country") <=> usq5all("country")), "inner")
+      .select(usq5all("country"), (usq5all("q1_confirmed") / us_pop("population")),
+      (usq5all("q1_deaths") / us_pop("population")), (usq5all("q1_recovered") / us_pop("population")))
+      .withColumnRenamed("(q1_confirmed / population)", "% new confirmed per capita")
+      .withColumnRenamed("(q1_deaths / population)", "% deaths per capita")
+      .withColumnRenamed("(q1_recovered / population)", "% recovered per capita")
+
+    //US Q6 ALL PERCENT
+    val usq6 = usq.select(usq("country"), usq("date"), usq("confirmed"), usq("deaths"), usq("recovered"))
+      .where(usq("country") === "US" && usq("date").like("%2021") && usq("date").between("03/31/2021","06/30/2021"))
+    val usq6min = usq6.select(usq6("country"), usq6("date"), usq6("confirmed"), usq6("deaths"), usq6("recovered"))
+      .groupBy("country").min("confirmed", "deaths", "recovered")
+    val usq6max = usq6.select(usq6("country"), usq6("date"), usq6("confirmed"), usq6("deaths"), usq6("recovered"))
+      .groupBy("country").max("confirmed", "deaths", "recovered")
+    val usq6all = usq6min.join(usq6max, (usq6min("country") <=> usq6max("country")), "inner")
+      .select(usq6min("country"), (usq6max("max(confirmed)") - usq6min("min(confirmed)")),
+      (usq6max("max(deaths)") - usq6min("min(deaths)")), (usq6max("max(recovered)") - usq6min("min(recovered)")))
+      .withColumnRenamed("(max(confirmed) - min(confirmed))", "q1_confirmed")
+      .withColumnRenamed("(max(deaths) - min(deaths))", "q1_deaths")
+      .withColumnRenamed("(max(recovered) - min(recovered))", "q1_recovered")
+    val usq6allpercent = usq6all.join(us_pop, (us_pop("country") <=> usq6all("country")), "inner")
+      .select(usq6all("country"), (usq6all("q1_confirmed") / us_pop("population")),
+      (usq6all("q1_deaths") / us_pop("population")), (usq6all("q1_recovered") / us_pop("population")))
+      .withColumnRenamed("(q1_confirmed / population)", "% new confirmed per capita")
+      .withColumnRenamed("(q1_deaths / population)", "% deaths per capita")
+      .withColumnRenamed("(q1_recovered / population)", "% recovered per capita")
+
+    val usallpercent = usq1allpercent.union(usq2allpercent).union(usq3allpercent).union(usq4allpercent).union(usq5allpercent).union(usq6allpercent)
+    val windowSpec = Window.partitionBy("country").orderBy("country")
+    val usallpercentbyquarter = usallpercent.withColumn("quarter",row_number.over(windowSpec))
+    // //Writer.writeCSV(uspercentbyquarter, "out/us_percent_by_quarter", true, true)
+    return usallpercentbyquarter
   }
 
   def globalPercentByQuarter(spark: SparkSession): DataFrame = {
     val df1 = cleanLocationNames.begin(spark)
-    val df2 = LastUpdateCleaner.cleanDF(spark,df1).cache()
-    df2.createOrReplaceTempView("global_confirmed")
-    val uid_rdd = spark.sparkContext.textFile("raw_data/uid_lookup_table.csv")
+    val df2 = LastUpdateCleaner.cleanDF(spark,df1)
     val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
-    val us_pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
+    val pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
 
     val gq = df2.select(df2("country"), df2("state"), df2("date"), df2("confirmed"))
       .withColumn("confirmed", col("confirmed").cast("int"))
@@ -159,8 +300,8 @@ object TransmissionRates {
     val gq1con = gq1min.join(gq1max, (gq1min("country") <=> gq1max("country")), "inner")
       .select(gq1min("country"), (gq1max("max(confirmed)") - gq1min("min(confirmed)")))
       .withColumnRenamed("(max(confirmed) - min(confirmed))", "q6_confirmed")
-    val gq1percent = gq1con.join(us_pop, (us_pop("country") <=> gq1con("country")), "inner")
-      .select(gq1con("country"), (gq1con("q6_confirmed") / us_pop("population")))
+    val gq1percent = gq1con.join(pop, (pop("country") <=> gq1con("country")), "inner")
+      .select(gq1con("country"), (gq1con("q6_confirmed") / pop("population")))
       .withColumnRenamed("(q6_confirmed / population)", "% of new cases per capita")
 
     //Global Q2
@@ -173,8 +314,8 @@ object TransmissionRates {
     val gq2con = gq2min.join(gq2max, (gq2min("country") <=> gq2max("country")), "inner")
       .select(gq2min("country"), (gq2max("max(confirmed)") - gq2min("min(confirmed)")))
       .withColumnRenamed("(max(confirmed) - min(confirmed))", "q6_confirmed")
-    val gq2percent = gq2con.join(us_pop, (us_pop("country") <=> gq2con("country")), "inner")
-      .select(gq2con("country"), (gq2con("q6_confirmed") / us_pop("population")))
+    val gq2percent = gq2con.join(pop, (pop("country") <=> gq2con("country")), "inner")
+      .select(gq2con("country"), (gq2con("q6_confirmed") / pop("population")))
       .withColumnRenamed("(q6_confirmed / population)", "% of new cases per capita")
 
     //Global Q3
@@ -187,8 +328,8 @@ object TransmissionRates {
     val gq3con = gq3min.join(gq3max, (gq3min("country") <=> gq3max("country")), "inner")
       .select(gq3min("country"), (gq3max("max(confirmed)") - gq3min("min(confirmed)")))
       .withColumnRenamed("(max(confirmed) - min(confirmed))", "q6_confirmed")
-    val gq3percent = gq3con.join(us_pop, (us_pop("country") <=> gq3con("country")), "inner")
-      .select(gq3con("country"), (gq3con("q6_confirmed") / us_pop("population")))
+    val gq3percent = gq3con.join(pop, (pop("country") <=> gq3con("country")), "inner")
+      .select(gq3con("country"), (gq3con("q6_confirmed") / pop("population")))
       .withColumnRenamed("(q6_confirmed / population)", "% of new cases per capita")
 
     //Global Q4
@@ -201,8 +342,8 @@ object TransmissionRates {
     val gq4con = gq4min.join(gq4max, (gq4min("country") <=> gq4max("country")), "inner")
       .select(gq4min("country"), (gq4max("max(confirmed)") - gq4min("min(confirmed)")))
       .withColumnRenamed("(max(confirmed) - min(confirmed))", "q6_confirmed")
-    val gq4percent = gq4con.join(us_pop, (us_pop("country") <=> gq4con("country")), "inner")
-      .select(gq4con("country"), (gq4con("q6_confirmed") / us_pop("population")))
+    val gq4percent = gq4con.join(pop, (pop("country") <=> gq4con("country")), "inner")
+      .select(gq4con("country"), (gq4con("q6_confirmed") / pop("population")))
       .withColumnRenamed("(q6_confirmed / population)", "% of new cases per capita")
 
     //Global Q5
@@ -215,8 +356,8 @@ object TransmissionRates {
     val gq5con = gq5min.join(gq5max, (gq5min("country") <=> gq5max("country")), "inner")
       .select(gq5min("country"), (gq5max("max(confirmed)") - gq5min("min(confirmed)")))
       .withColumnRenamed("(max(confirmed) - min(confirmed))", "q6_confirmed")
-    val gq5percent = gq5con.join(us_pop, (us_pop("country") <=> gq5con("country")), "inner")
-      .select(gq5con("country"), (gq5con("q6_confirmed") / us_pop("population")))
+    val gq5percent = gq5con.join(pop, (pop("country") <=> gq5con("country")), "inner")
+      .select(gq5con("country"), (gq5con("q6_confirmed") / pop("population")))
       .withColumnRenamed("(q6_confirmed / population)", "% of new cases per capita")
 
     //Global Q6
@@ -229,8 +370,8 @@ object TransmissionRates {
     val gq6con = gq6min.join(gq6max, (gq6min("country") <=> gq6max("country")), "inner")
       .select(gq6min("country"), (gq6max("max(confirmed)") - gq6min("min(confirmed)")))
       .withColumnRenamed("(max(confirmed) - min(confirmed))", "q6_confirmed")
-    val gq6percent = gq6con.join(us_pop, (us_pop("country") <=> gq6con("country")), "inner")
-      .select(gq6con("country"), (gq6con("q6_confirmed") / us_pop("population")))
+    val gq6percent = gq6con.join(pop, (pop("country") <=> gq6con("country")), "inner")
+      .select(gq6con("country"), (gq6con("q6_confirmed") / pop("population")))
       .withColumnRenamed("(q6_confirmed / population)", "% of new cases per capita")
 
     val gqpercent = gq1percent.union(gq2percent).union(gq3percent).union(gq4percent).union(gq5percent).union(gq6percent)
