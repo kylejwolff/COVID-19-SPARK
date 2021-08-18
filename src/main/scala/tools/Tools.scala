@@ -5,6 +5,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{lag, udf, col, trim, when}
 import org.apache.spark.sql.expressions.Window
+import java.sql.Date
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import scala.util.matching.Regex
