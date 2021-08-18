@@ -1,6 +1,6 @@
 package tools
 
-import org.apache.spark.sql.{AnalysisException, SparkSession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SparkSession}
 
 import java.text.SimpleDateFormat
 
@@ -19,7 +19,7 @@ object LastUpdateCleaner {
     spark.stop()
 
   }
-  def clean(spark: SparkSession): Unit = {
+  def clean(spark: SparkSession): DataFrame = {
     print("Cleaning \"Last Update\" from covid_19_data.csv...")
     val covidRDD = spark.sparkContext.textFile("raw_data/covid_19_data.csv")
       .mapPartitionsWithIndex((index, line) => if(index == 0) line.drop(1) else line)
@@ -39,6 +39,7 @@ object LastUpdateCleaner {
     catch{
       case e: AnalysisException => println(e.message)
     }
+    return covidDF
 
   }
   def formatDate(line: String): String = {
