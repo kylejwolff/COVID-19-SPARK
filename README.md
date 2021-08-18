@@ -44,7 +44,7 @@ In your CLI, `git clone https://github.com/kylejwolff/COVID-19-SPARK.git`.
 
 Setting up the environment:
 1) Navigate to the root directory of the cloned repository `parent-directory/COVID-19-SPARK/`, rename `build-template.sbt` to `build.sbt`.
-2) In the `build.sbt` file, uncomment the appropriate code block to **either** run the application on Spark 2.4.8 or Spark 3.1.2.
+2) In the `build.sbt` file, uncomment the appropriate code block to run the application on Spark 2.4.8 (**DEPRECATED**) or Spark 3.1.2.
 3) In your CLI, enter `sbt run` to import dependencies and run the application.
 
 ## Usage
