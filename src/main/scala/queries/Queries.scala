@@ -151,6 +151,7 @@ object Queries {
 
         val usq = covid_df.select(covid_df("country"), covid_df("region"), covid_df("observed_date"), covid_df("confirmed"))
         .withColumn("confirmed", col("confirmed").cast("int"))
+        //.withColumn("observed_date", col("observed_date").cast("string"))
         .groupBy("region", "country", "observed_date").max("confirmed")
         .select("country", "observed_date", "max(confirmed)")
         .groupBy("country", "observed_date").sum("max(confirmed)")
@@ -158,7 +159,8 @@ object Queries {
 
         //US Q1
         val usq1 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("01/01/2020","03/31/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("01/01/2020","03/31/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-01-01","2020-03-31"))
         val usq1min = usq1.select(usq1("country"), usq1("observed_date"), usq1("confirmed"))
         .groupBy("country").min("confirmed")
         val usq1max = usq1.select(usq1("country"), usq1("observed_date"), usq1("confirmed"))
@@ -172,7 +174,8 @@ object Queries {
 
         //US Q2
         val usq2 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("03/31/2020","06/30/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("03/31/2020","06/30/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-03-31","2020-06-30"))
         val usq2min = usq2.select(usq2("country"), usq2("observed_date"), usq2("confirmed"))
         .groupBy("country").min("confirmed")
         val usq2max = usq2.select(usq2("country"), usq2("observed_date"), usq2("confirmed"))
@@ -186,7 +189,8 @@ object Queries {
 
         //US Q3
         val usq3 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("06/30/2020","08/30/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("06/30/2020","08/30/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-06-30","2020-08-30"))
         val usq3min = usq3.select(usq3("country"), usq3("observed_date"), usq3("confirmed"))
         .groupBy("country").min("confirmed")
         val usq3max = usq3.select(usq3("country"), usq3("observed_date"), usq3("confirmed"))
@@ -200,7 +204,8 @@ object Queries {
 
         //US Q4
         val usq4 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("08/30/2020","12/31/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("08/30/2020","12/31/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-08-30","2020-12-31"))
         val usq4min = usq4.select(usq4("country"), usq4("observed_date"), usq4("confirmed"))
         .groupBy("country").min("confirmed")
         val usq4max = usq4.select(usq4("country"), usq4("observed_date"), usq4("confirmed"))
@@ -214,7 +219,8 @@ object Queries {
 
         //US Q5
         val usq5 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("01/01/2021","03/31/2021"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("01/01/2021","03/31/2021"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2021")  */&& usq("observed_date").between("2021-01-01","2021-03-31"))
         val usq5min = usq5.select(usq5("country"), usq5("observed_date"), usq5("confirmed"))
         .groupBy("country").min("confirmed")
         val usq5max = usq5.select(usq5("country"), usq5("observed_date"), usq5("confirmed"))
@@ -228,7 +234,8 @@ object Queries {
 
         //US Q6
         val usq6 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("03/31/2021","06/30/2021"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("03/31/2021","06/30/2021"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2021")  */&& usq("observed_date").between("2021-03-31","2021-06-30"))
         val usq6min = usq6.select(usq6("country"), usq6("observed_date"), usq6("confirmed"))
         .groupBy("country").min("confirmed")
         val usq6max = usq6.select(usq6("country"), usq6("observed_date"), usq6("confirmed"))
@@ -265,7 +272,8 @@ object Queries {
 
         //US Q1 ALL PERCENT
         val usq1 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"), usq("deaths"), usq("recovered"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("01/01/2020","03/31/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("01/01/2020","03/31/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-01-01","2020-03-31"))
         val usq1min = usq1.select(usq1("country"), usq1("observed_date"), usq1("confirmed"), usq1("deaths"), usq1("recovered"))
         .groupBy("country").min("confirmed", "deaths", "recovered")
         val usq1max = usq1.select(usq1("country"), usq1("observed_date"), usq1("confirmed"), usq1("deaths"), usq1("recovered"))
@@ -285,7 +293,8 @@ object Queries {
 
         //US Q2 ALL PERCENT
         val usq2 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"), usq("deaths"), usq("recovered"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("03/31/2020","06/30/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("03/31/2020","06/30/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-03-31","2020-06-30"))
         val usq2min = usq2.select(usq2("country"), usq2("observed_date"), usq2("confirmed"), usq2("deaths"), usq2("recovered"))
         .groupBy("country").min("confirmed", "deaths", "recovered")
         val usq2max = usq2.select(usq2("country"), usq2("observed_date"), usq2("confirmed"), usq2("deaths"), usq2("recovered"))
@@ -305,7 +314,8 @@ object Queries {
 
         //US Q3 ALL PERCENT
         val usq3 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"), usq("deaths"), usq("recovered"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("06/30/2020","08/30/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("06/30/2020","08/30/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-06-30","2020-08-30"))
         val usq3min = usq3.select(usq3("country"), usq3("observed_date"), usq3("confirmed"), usq3("deaths"), usq3("recovered"))
         .groupBy("country").min("confirmed", "deaths", "recovered")
         val usq3max = usq3.select(usq3("country"), usq3("observed_date"), usq3("confirmed"), usq3("deaths"), usq3("recovered"))
@@ -325,7 +335,8 @@ object Queries {
 
         //US Q4 ALL PERCENT
         val usq4 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"), usq("deaths"), usq("recovered"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("08/30/2020","12/31/2020"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("08/30/2020","12/31/2020"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-08-30","2020-12-31"))
         val usq4min = usq4.select(usq4("country"), usq4("observed_date"), usq4("confirmed"), usq4("deaths"), usq4("recovered"))
         .groupBy("country").min("confirmed", "deaths", "recovered")
         val usq4max = usq4.select(usq4("country"), usq4("observed_date"), usq4("confirmed"), usq4("deaths"), usq4("recovered"))
@@ -345,7 +356,8 @@ object Queries {
 
         //US Q5 ALL PERCENT
         val usq5 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"), usq("deaths"), usq("recovered"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("01/01/2021","03/31/2021"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("01/01/2021","03/31/2021"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2021")  */&& usq("observed_date").between("2021-01-01","2021-03-31"))
         val usq5min = usq5.select(usq5("country"), usq5("observed_date"), usq5("confirmed"), usq5("deaths"), usq5("recovered"))
         .groupBy("country").min("confirmed", "deaths", "recovered")
         val usq5max = usq5.select(usq5("country"), usq5("observed_date"), usq5("confirmed"), usq5("deaths"), usq5("recovered"))
@@ -365,7 +377,8 @@ object Queries {
 
         //US Q6 ALL PERCENT
         val usq6 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"), usq("deaths"), usq("recovered"))
-        .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("03/31/2021","06/30/2021"))
+        // .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("01/01/2021","03/31/2021"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2021")  */&& usq("observed_date").between("2021-01-01","2021-03-31"))
         val usq6min = usq6.select(usq6("country"), usq6("observed_date"), usq6("confirmed"), usq6("deaths"), usq6("recovered"))
         .groupBy("country").min("confirmed", "deaths", "recovered")
         val usq6max = usq6.select(usq6("country"), usq6("observed_date"), usq6("confirmed"), usq6("deaths"), usq6("recovered"))
@@ -403,7 +416,8 @@ object Queries {
 
         //Global Q1
         val gq1 = gq.select(gq("country"), gq("observed_date"), gq("confirmed"))
-        .where(gq("observed_date").like("%2020") && gq("observed_date").between("01/01/2020","03/31/2020"))
+        // .where(gq("observed_date").like("%2020") && gq("observed_date").between("01/01/2020","03/31/2020"))
+        .where(/* gq("observed_date").like("%2020") &&  */gq("observed_date").between("2020-01-01","2020-03-31"))
         val gq1min = gq1.select(gq1("country"), gq1("observed_date"), gq1("confirmed"))
         .groupBy("country").min("confirmed")
         val gq1max = gq1.select(gq1("country"), gq1("observed_date"), gq1("confirmed"))
@@ -417,7 +431,8 @@ object Queries {
 
         //Global Q2
         val gq2 = gq.select(gq("country"), gq("observed_date"), gq("confirmed"))
-        .where(gq("observed_date").like("%2020") && gq("observed_date").between("03/31/2020","06/30/2020"))
+        // .where(gq("observed_date").like("%2020") && gq("observed_date").between("03/31/2020","06/30/2020"))
+        .where(/* gq("observed_date").like("%2020") &&  */gq("observed_date").between("2020-03-31","2020-06-30"))
         val gq2min = gq2.select(gq2("country"), gq2("observed_date"), gq2("confirmed"))
         .groupBy("country").min("confirmed")
         val gq2max = gq2.select(gq2("country"), gq2("observed_date"), gq2("confirmed"))
@@ -431,7 +446,8 @@ object Queries {
 
         //Global Q3
         val gq3 = gq.select(gq("country"), gq("observed_date"), gq("confirmed"))
-        .where(gq("observed_date").like("%2020") && gq("observed_date").between("06/30/2020","08/30/2020"))
+        // .where(gq("observed_date").like("%2020") && gq("observed_date").between("06/30/2020","08/30/2020"))
+        .where(/* gq("observed_date").like("%2020") &&  */gq("observed_date").between("2020-06-30","2020-08-30"))
         val gq3min = gq3.select(gq3("country"), gq3("observed_date"), gq3("confirmed"))
         .groupBy("country").min("confirmed")
         val gq3max = gq3.select(gq3("country"), gq3("observed_date"), gq3("confirmed"))
@@ -445,7 +461,8 @@ object Queries {
 
         //Global Q4
         val gq4 = gq.select(gq("country"), gq("observed_date"), gq("confirmed"))
-        .where(gq("observed_date").like("%2020") && gq("observed_date").between("08/30/2020","12/31/2020"))
+        // .where(gq("observed_date").like("%2020") && gq("observed_date").between("08/30/2020","12/31/2020"))
+        .where(/* gq("observed_date").like("%2020") &&  */gq("observed_date").between("2020-08-30","2020-12-31"))
         val gq4min = gq4.select(gq4("country"), gq4("observed_date"), gq4("confirmed"))
         .groupBy("country").min("confirmed")
         val gq4max = gq4.select(gq4("country"), gq4("observed_date"), gq4("confirmed"))
@@ -459,7 +476,8 @@ object Queries {
 
         //Global Q5
         val gq5 = gq.select(gq("country"), gq("observed_date"), gq("confirmed"))
-        .where(gq("observed_date").like("%2021") && gq("observed_date").between("01/01/2021","03/31/2021"))
+        // .where(gq("observed_date").like("%2021") && gq("observed_date").between("01/01/2021","03/31/2021"))
+        .where(/* gq("observed_date").like("%2021") &&  */gq("observed_date").between("2021-01-01","2021-03-31"))
         val gq5min = gq5.select(gq5("country"), gq5("observed_date"), gq5("confirmed"))
         .groupBy("country").min("confirmed")
         val gq5max = gq5.select(gq5("country"), gq5("observed_date"), gq5("confirmed"))
@@ -473,7 +491,8 @@ object Queries {
 
         //Global Q6
         val gq6 = gq.select(gq("country"), gq("observed_date"), gq("confirmed"))
-        .where(gq("observed_date").like("%2021") && gq("observed_date").between("03/31/2021","06/30/2021"))
+        // .where(gq("observed_date").like("%2021") && gq("observed_date").between("03/31/2021","06/30/2021"))
+        .where(/* gq("observed_date").like("%2021") &&  */gq("observed_date").between("2021-03-31","2021-06-30"))
         val gq6min = gq6.select(gq6("country"), gq6("observed_date"), gq6("confirmed"))
         .groupBy("country").min("confirmed")
         val gq6max = gq6.select(gq6("country"), gq6("observed_date"), gq6("confirmed"))
