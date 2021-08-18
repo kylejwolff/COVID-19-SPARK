@@ -3,7 +3,7 @@ package tools
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{lag, udf}
+import org.apache.spark.sql.functions.{lag, udf, col, trim, when}
 import org.apache.spark.sql.expressions.Window
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -53,10 +53,29 @@ object Cleaner {
     case class GlobalTimeSeriesRow_Vertical(id: Integer, region:String, country:String, latitude:Float, longitude:Float, date:LocalDate, counts: Integer)
     case class USTimeSeriesRow(uid:Integer, iso2:String, iso3:String, code3:Integer, FIPS:Integer, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, counts:Array[Integer], population: Integer=null.asInstanceOf[Integer])
     case class USTimeSeriesRow_Vertical(uid:Integer, iso2:String, iso3:String, code3:Integer, FIPS:Integer, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, date:LocalDate, counts:Integer, population: Integer=null.asInstanceOf[Integer])
+    case class Covid19DataRow(id:Integer, observed_date:LocalDate, region:String, country:String, last_update:LocalDate, confirmed:Integer, deaths:Integer, recovered:Integer)
 
+    private val observed_date_formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
 
     private def castInteger(value: String): Integer = {
         return if (value == null) null.asInstanceOf[Integer] else Integer.parseInt(value)
+    }
+
+    private def formatDate(line: String): LocalDate = {
+        var date_format = null.asInstanceOf[DateTimeFormatter]
+
+        if (line.matches("^\\d{1,2}/\\d{1,2}/\\d{2,4} \\d{1,2}:\\d{2}$")) {
+            date_format = DateTimeFormatter.ofPattern("M/dd/yy hh:mm")
+            return LocalDate.parse(line, date_format)
+        }
+
+        else if (line.matches("^\\d{2,4}-\\d{1,2}-\\d{1,2}T? ?\\d{1,2}:\\d{1,2}:\\d{1,2}$")){
+            date_format = DateTimeFormatter.ofPattern("yy-MM-dd hh:mm:ss")
+            return LocalDate.parse(line.replace("T", " "), date_format)
+        }
+        else {
+            return null.asInstanceOf[LocalDate]
+        }
     }
 
     private def cleanTimeSeries(data_rdd: RDD[String]): RDD[Array[String]] = {
@@ -115,99 +134,29 @@ object Cleaner {
         return session.createDataFrame(timeseries_rdd.
             map(x => UIDLookupRow(x(0).toInt, x(1), x(2), castInteger(x(3)), castInteger(x(4)), x(5), x(6), x(7), if (x(8) == null) 0F else x(8).toFloat, if (x(9) == null) 0F else x(9).toFloat, x(10), if (x(11) == null) 0 else x(11).toInt)))
     }
-}
 
-object Query {
+    def cleanCovid19Data(session: SparkSession, data_rdd: RDD[String]): DataFrame = {
+        val covid_rdd = cleanTimeSeries(data_rdd)
 
-    private def formatDate(start_date: LocalDate, plus_day: Int, format: String="MM/dd/yyyy"): String = {
-        return start_date.plusDays(plus_day).format(DateTimeFormatter.ofPattern(format))
-    }
+        val covid_df = session.createDataFrame(covid_rdd.
+            map(x => Covid19DataRow(castInteger(x(0)), LocalDate.parse(x(1), observed_date_formatter), x(2), x(3), formatDate(x(4)), castInteger(x(5)), castInteger(x(6)), castInteger(x(7)))))
 
-    def mergeGlobal(confirmed_df: DataFrame, deaths_df: DataFrame, recovered_df: DataFrame): DataFrame = {
-        val confirmed_deaths_df = confirmed_df.
-            join(deaths_df, (confirmed_df("region") <=> deaths_df("region")) && (confirmed_df("country") <=> deaths_df("country")), "outer").
-            select(confirmed_df("*"), deaths_df("counts").as("deaths")).
-            withColumnRenamed("counts", "confirmed")
+        //Fix issues in province/state column
+        val dfP = covid_df.withColumn("region", when(col("region").rlike("Diamond Princess"),
+            "Diamond Princess").when(col("region").rlike("Grand Princess"),
+            "Grand Princess").when(col("region")===col("region")||col("region")==="None"||col("region").rlike("Unknown"), null)
+            .otherwise(trim(col("region"))))
 
-        val merged_global_df = confirmed_deaths_df.
-            join(recovered_df, (confirmed_deaths_df("region") <=> recovered_df("region")) && (confirmed_deaths_df("country") <=> recovered_df("country")), "outer").
-            select(confirmed_deaths_df("*"), recovered_df("counts").as("recovered"))
+        //Fix issues in Country/Region column
+        val dfC = dfP.withColumn(
+        "country",
+        when(
+            col("country") === "('St. Martin',)",
+            "St. Martin").when(col("country").rlike("Bahamas"),
+            "Bahamas").when(col("country").rlike("Gambia"),
+            "Gambia").otherwise(trim(col("country")))
+        )
 
-        return merged_global_df
-    }
-
-    def mergeUS(confirmed_df: DataFrame, deaths_df: DataFrame): DataFrame = {
-        val merged_us_df = confirmed_df.
-            join(deaths_df, confirmed_df("uid") <=> deaths_df("uid"), "outer").
-            select(confirmed_df("*"), deaths_df("counts").as("deaths"), deaths_df("population")).
-            withColumnRenamed("counts", "confirmed")
-
-        return merged_us_df
-    }
-
-    def getGlobalCountUnpacked(global_merged_df: DataFrame, which: String, start_date: LocalDate, format: String="MMM dd ''yy"): DataFrame = {
-
-        val num_days = global_merged_df.first.getAs[scala.collection.mutable.WrappedArray[String]](which).length
-
-        return global_merged_df.
-            select((Seq(global_merged_df("country"), global_merged_df("latitude"), global_merged_df("longitude")) ++ Range(0, num_days).map(i => global_merged_df(which)(i).as(formatDate(start_date, i, format)))):_*).
-            where(global_merged_df("region").isNull)
-    }
-
-    def mergeGlobalVertical(confirmed_vertical_df: DataFrame, deaths_vertical_df: DataFrame, recovered_vertical_df: DataFrame): DataFrame = {
-        val confirmed_deaths_vertical_df = confirmed_vertical_df.
-            join(deaths_vertical_df, (confirmed_vertical_df("id") <=> deaths_vertical_df("id")) && (confirmed_vertical_df("date") <=> deaths_vertical_df("date")), "outer").
-            select(confirmed_vertical_df("*"), deaths_vertical_df("counts").as("deaths")).
-            withColumnRenamed("counts", "confirmed")
-
-        val merged_global_vertical_df = confirmed_deaths_vertical_df.
-            join(recovered_vertical_df, (confirmed_deaths_vertical_df("id") <=> recovered_vertical_df("id")) && (confirmed_deaths_vertical_df("date") <=> recovered_vertical_df("date")), "outer").
-            select(confirmed_deaths_vertical_df("*"), recovered_vertical_df("counts").as("recovered"))
-
-        return merged_global_vertical_df
-    }
-
-    def mergeUSVertical(confirmed_vertical_df: DataFrame, deaths_vertical_df: DataFrame): DataFrame = {
-        val merged_us_vertical_df = confirmed_vertical_df.
-            join(deaths_vertical_df, (confirmed_vertical_df("uid") <=> deaths_vertical_df("uid") && confirmed_vertical_df("date") <=> deaths_vertical_df("date")), "outer").
-            select(confirmed_vertical_df("*"), deaths_vertical_df("counts").as("deaths"), deaths_vertical_df("population")).
-            withColumnRenamed("counts", "confirmed")
-
-        return merged_us_vertical_df
-    }
-
-    def getGlobalCountVertical(global_vertical_df: DataFrame): DataFrame = {
-        return global_vertical_df.
-            select("*").
-            where(global_vertical_df("region").isNull).
-            drop("region")
-    }
-
-    def getUSCountVertical(us_vertical_df: DataFrame): DataFrame = {
-        return us_vertical_df.
-            select("*").
-            drop("country")
-    }
-
-    def getGrowth(df: DataFrame, which: String, partition_col: String=null, vertical: Boolean=false): DataFrame = {
-        if (vertical) {
-            val df_with_lagged = df.
-                withColumn(s"${which}_lagged", lag(which, 1, null.asInstanceOf[Integer]).over(Window.partitionBy(partition_col).orderBy("date")))
-                
-            return df_with_lagged.
-                withColumn(s"${which}_growth", df(which).minus(df_with_lagged(s"${which}_lagged"))).
-                drop(s"${which}_lagged")
-        }
-
-        def calculateGrowth(counts: Array[Integer]): Array[Integer] = {
-            return Array[Integer](null.asInstanceOf[Integer]) ++ counts.slice(1, counts.length).
-                zip(counts.slice(0, counts.length - 1)).
-                map{case (a, b) => (a - b).asInstanceOf[Integer]}
-        }
-
-        val calculateGrowthUDF = udf(calculateGrowth _)
-
-        return df.
-            withColumn(s"${which}_growth", calculateGrowthUDF(df(which)))
+        return dfC
     }
 }
