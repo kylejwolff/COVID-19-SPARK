@@ -24,13 +24,6 @@ The main contributions of this project are:
 * Spark-Core - 3.1.2
 * Spark-SQL - 3.1.2
 
-To address unresolved build failures on Windows machines using winutils.exe binaries for Hadoop, we have included a compatible technology stack:
-
-* Scala - 2.11.12
-* sbt - 1.5.4
-* Spark-Core - 2.4.8
-* Spark-SQL - 2.4.8
-
 ## Features
 
 * tools package - Available tools are for loading, pre-processing & cleaning the original erroneous CSV data & load it as a DataSet object, and write DataSet query results to disk in CSV format.
