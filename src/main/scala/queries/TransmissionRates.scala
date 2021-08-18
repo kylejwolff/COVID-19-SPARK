@@ -29,7 +29,11 @@ object TransmissionRates {
   }
 
   def usPercentByQuarter(spark: SparkSession): DataFrame = {
-    val df1 = cleanLocationNames.begin(spark)
+    val df = spark.read.format("csv")
+      .option("inferSchema", "true")
+      .option("header", "true")
+      .load("raw_data/covid_19_data.csv")
+    val df1 = cleanLocationNames.begin(spark, df)
     val df2 = LastUpdateCleaner.cleanDF(spark,df1)
     val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
     val us_pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
@@ -133,7 +137,11 @@ object TransmissionRates {
   }
 
   def usAllPercentByQuarter(spark: SparkSession): DataFrame = {
-    val df1 = cleanLocationNames.begin(spark)
+    val df = spark.read.format("csv")
+      .option("inferSchema", "true")
+      .option("header", "true")
+      .load("raw_data/covid_19_data.csv")
+    val df1 = cleanLocationNames.begin(spark, df)
     val df2 = LastUpdateCleaner.cleanDF(spark,df1)
     val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
     val us_pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
@@ -278,7 +286,11 @@ object TransmissionRates {
   }
 
   def globalPercentByQuarter(spark: SparkSession): DataFrame = {
-    val df1 = cleanLocationNames.begin(spark)
+    val df = spark.read.format("csv")
+      .option("inferSchema", "true")
+      .option("header", "true")
+      .load("raw_data/covid_19_data.csv")
+    val df1 = cleanLocationNames.begin(spark, df)
     val df2 = LastUpdateCleaner.cleanDF(spark,df1)
     val uid = Cleaner.cleanUIDLookup(spark,Loader.loadCSV(spark, "raw_data/uid_lookup_table.csv"))
     val pop = uid.select(uid("country"), uid("region"), uid("population")).where(uid("region").isNull)
