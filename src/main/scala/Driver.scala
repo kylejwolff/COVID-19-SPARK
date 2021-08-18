@@ -131,7 +131,7 @@ object Driver {
     val us_merged_timeseries_vertical = Query.mergeUSVertical(us_confirmed_timeseries_vertical, us_deaths_timeseries_vertical)
 
     // Clean-up covid_19_data.csv
-    val cleanedDates = LastUpdateCleaner.clean(spark)
+    val cleanedDates = LastUpdateCleaner.cleanCSV(spark)
     val cleanedNames = cleanLocationNames.begin(spark, cleanedDates)
 
     println("All DataFrames ready.\n")

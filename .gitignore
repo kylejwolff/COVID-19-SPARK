@@ -1,6 +1,7 @@
 /.bsp/
 /.idea/
 /project/
+/spark-warehouse/
 /src/test/
 /target/
 /metastore_db/
@@ -9,6 +10,7 @@
 /.metals/
 /.vscode/
 /.DS_Store/
+/out/
 build.sbt
 
 
