@@ -7,6 +7,7 @@ import org.apache.spark.sql.functions.{lag, udf, col, trim, when}
 import org.apache.spark.sql.expressions.Window
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import scala.util.matching.Regex
 
 object Loader {
     def loadCSV(session: SparkSession, path: String, drop_header: Boolean=true): RDD[String] = {
@@ -53,7 +54,15 @@ object Cleaner {
     case class GlobalTimeSeriesRow_Vertical(id: Integer, region:String, country:String, latitude:Float, longitude:Float, date:LocalDate, counts: Integer)
     case class USTimeSeriesRow(uid:Integer, iso2:String, iso3:String, code3:Integer, FIPS:Integer, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, counts:Array[Integer], population: Integer=null.asInstanceOf[Integer])
     case class USTimeSeriesRow_Vertical(uid:Integer, iso2:String, iso3:String, code3:Integer, FIPS:Integer, Admin2:String, region:String, country:String, latitude:Float, longitude:Float, combined_key:String, date:LocalDate, counts:Integer, population: Integer=null.asInstanceOf[Integer])
-    case class Covid19DataRow(id:Integer, observed_date:LocalDate, region:String, country:String, last_update:LocalDate, confirmed:Integer, deaths:Integer, recovered:Integer)
+    case class Covid19DataRow(id:Integer, observed_date:LocalDate, region:String, country:String, last_updated:LocalDate, confirmed:Integer, deaths:Integer, recovered:Integer)
+
+    private val date_pattern_formatters = List[(String, DateTimeFormatter)](
+        ("^(\\d{1,2})/(\\d{1,2})/(\\d{4}) (\\d{1,2}):(\\d{2})$", DateTimeFormatter.ofPattern("M/d/yyyy H:mm")),
+        ("^(\\d{1,2})/(\\d{1,2})/(\\d{2}) (\\d{2}):(\\d{2})$", DateTimeFormatter.ofPattern("M/d/yy HH:mm")),
+        ("^(\\d{1,2})/(\\d{1,2})/(\\d{2}) (\\d{1,2}):(\\d{2})$", DateTimeFormatter.ofPattern("M/d/yy h:mm")),
+        ("^(\\d{2,4})-(\\d{1,2})-(\\d{1,2})T(\\d{1,2}):(\\d{1,2}):(\\d{1,2})$", DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
+        ("^(\\d{2,4})-(\\d{1,2})-(\\d{1,2}) (\\d{1,2}):(\\d{1,2}):(\\d{1,2})$", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    )
 
     private val observed_date_formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
 
@@ -62,20 +71,11 @@ object Cleaner {
     }
 
     private def formatDate(line: String): LocalDate = {
-        var date_format = null.asInstanceOf[DateTimeFormatter]
+        val formatter = date_pattern_formatters.find{case (pattern, formatter) => line.matches(pattern)}.getOrElse(null)
 
-        if (line.matches("^\\d{1,2}/\\d{1,2}/\\d{2,4} \\d{1,2}:\\d{2}$")) {
-            date_format = DateTimeFormatter.ofPattern("M/dd/yy hh:mm")
-            return LocalDate.parse(line, date_format)
-        }
+        if (formatter == null) null.asInstanceOf[LocalDate]
 
-        else if (line.matches("^\\d{2,4}-\\d{1,2}-\\d{1,2}T? ?\\d{1,2}:\\d{1,2}:\\d{1,2}$")){
-            date_format = DateTimeFormatter.ofPattern("yy-MM-dd hh:mm:ss")
-            return LocalDate.parse(line.replace("T", " "), date_format)
-        }
-        else {
-            return null.asInstanceOf[LocalDate]
-        }
+        else LocalDate.parse(line, formatter._2)
     }
 
     private def cleanTimeSeries(data_rdd: RDD[String]): RDD[Array[String]] = {
@@ -139,7 +139,7 @@ object Cleaner {
         val covid_rdd = cleanTimeSeries(data_rdd)
 
         val covid_df = session.createDataFrame(covid_rdd.
-            map(x => Covid19DataRow(castInteger(x(0)), LocalDate.parse(x(1), observed_date_formatter), x(2), x(3), formatDate(x(4)), castInteger(x(5)), castInteger(x(6)), castInteger(x(7)))))
+            map(x => Covid19DataRow(castInteger(x(0)), LocalDate.parse(x(1), observed_date_formatter), x(2), x(3), formatDate(x(4)), castInteger(x(5).slice(0, x(5).length - 2)), castInteger(x(6).slice(0, x(6).length - 2)), castInteger(x(7).slice(0, x(7).length - 2)))))
 
         //Fix issues in province/state column
         val dfP = covid_df.withColumn("region", when(col("region").rlike("Diamond Princess"),

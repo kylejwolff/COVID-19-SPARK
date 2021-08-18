@@ -1,8 +1,7 @@
 import tools._
-import scala.io.StdIn.readLine
-
-import clean._
 import queries._
+
+import scala.io.StdIn.readLine
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -108,31 +107,30 @@ object Driver {
 
     println("Preparing DataFrames...")
 
-    // // Clean-up
-    // val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
+    // Clean-up
+    val uid_lookup = Cleaner.cleanUIDLookup(spark, Loader.loadCSV(spark, uid_lookup_path))
 
-    // val global_confirmed_timeseries = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
-    // val global_deaths_timeseries = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_deaths_path))
-    // val global_recovered_timeseries = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
-    // val us_confirmed_timeseries = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_confirmed_path))
-    // val us_deaths_timeseries = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_deaths_path), with_population=true)
+    val global_confirmed_timeseries = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_confirmed_path))
+    val global_deaths_timeseries = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_deaths_path))
+    val global_recovered_timeseries = Cleaner.cleanGlobalTimeSeries(spark, Loader.loadCSV(spark, global_recovered_path))
+    val us_confirmed_timeseries = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_confirmed_path))
+    val us_deaths_timeseries = Cleaner.cleanUSTimeSeries(spark, Loader.loadCSV(spark, us_deaths_path), with_population=true)
 
-    // val global_confirmed_timeseries_vertical = Cleaner.cleanGlobalTimeSeries_Vertical(spark, Loader.loadCSV(spark, global_confirmed_path), start_date)
-    // val global_deaths_timeseries_vertical = Cleaner.cleanGlobalTimeSeries_Vertical(spark, Loader.loadCSV(spark, global_deaths_path), start_date)
-    // val global_recovered_timeseries_vertical = Cleaner.cleanGlobalTimeSeries_Vertical(spark, Loader.loadCSV(spark, global_recovered_path), start_date)
-    // val us_confirmed_timeseries_vertical = Cleaner.cleanUSTimeSeries_Vertical(spark, Loader.loadCSV(spark, us_confirmed_path), start_date)
-    // val us_deaths_timeseries_vertical = Cleaner.cleanUSTimeSeries_Vertical(spark, Loader.loadCSV(spark, us_deaths_path), start_date, with_population=true)
+    val global_confirmed_timeseries_vertical = Cleaner.cleanGlobalTimeSeries_Vertical(spark, Loader.loadCSV(spark, global_confirmed_path), start_date)
+    val global_deaths_timeseries_vertical = Cleaner.cleanGlobalTimeSeries_Vertical(spark, Loader.loadCSV(spark, global_deaths_path), start_date)
+    val global_recovered_timeseries_vertical = Cleaner.cleanGlobalTimeSeries_Vertical(spark, Loader.loadCSV(spark, global_recovered_path), start_date)
+    val us_confirmed_timeseries_vertical = Cleaner.cleanUSTimeSeries_Vertical(spark, Loader.loadCSV(spark, us_confirmed_path), start_date)
+    val us_deaths_timeseries_vertical = Cleaner.cleanUSTimeSeries_Vertical(spark, Loader.loadCSV(spark, us_deaths_path), start_date, with_population=true)
 
-    // // Merge Timeseries
-    // val global_merged_timeseries = Queries.mergeGlobal(global_confirmed_timeseries, global_deaths_timeseries, global_recovered_timeseries)
-    // val us_merged_timeseries = Queries.mergeUS(us_confirmed_timeseries, us_deaths_timeseries)
+    // Merge Timeseries
+    val global_merged_timeseries = Queries.mergeGlobal(global_confirmed_timeseries, global_deaths_timeseries, global_recovered_timeseries)
+    val us_merged_timeseries = Queries.mergeUS(us_confirmed_timeseries, us_deaths_timeseries)
 
-    // val global_merged_timeseries_vertical = Queries.mergeGlobalVertical(global_confirmed_timeseries_vertical, global_deaths_timeseries_vertical, global_recovered_timeseries_vertical)
-    // val us_merged_timeseries_vertical = Queries.mergeUSVertical(us_confirmed_timeseries_vertical, us_deaths_timeseries_vertical)
+    val global_merged_timeseries_vertical = Queries.mergeGlobalVertical(global_confirmed_timeseries_vertical, global_deaths_timeseries_vertical, global_recovered_timeseries_vertical)
+    val us_merged_timeseries_vertical = Queries.mergeUSVertical(us_confirmed_timeseries_vertical, us_deaths_timeseries_vertical)
 
     // Clean-up covid_19_data.csv
     val covid_19_data = Cleaner.cleanCovid19Data(spark, Loader.loadCSV(spark, covid_19_data_path))
-    covid_19_data.show()
 
     println("All DataFrames ready.\n")
 
@@ -155,18 +153,18 @@ object Driver {
 
       clear()
 
-      println("Running Queries...")
+      println("Running query...")
       
-      // userEntry match {
-      //   case "1" => query_1(global_merged_timeseries, start_date)
-      //   case "2" => query_2(global_merged_timeseries_vertical)
-      //   case "3" => query_3(global_merged_timeseries, start_date)
-      //   case "4" => query_4(spark, global_confirmed_timeseries, uid_lookup)
-      //   case "5" => query_5(spark, global_confirmed_timeseries, uid_lookup)
-      //   case "6" => query_6(spark, global_deaths_timeseries, global_confirmed_timeseries)
-      //   case "x" => run = false
-      //   case _ =>
-      // }
+      userEntry match {
+        case "1" => query_1(global_merged_timeseries, start_date)
+        case "2" => query_2(global_merged_timeseries_vertical)
+        case "3" => query_3(global_merged_timeseries, start_date)
+        case "4" => query_4(spark, global_confirmed_timeseries, uid_lookup)
+        case "5" => query_5(spark, global_confirmed_timeseries, uid_lookup)
+        case "6" => query_6(spark, global_deaths_timeseries, global_confirmed_timeseries)
+        case "x" => run = false
+        case _ =>
+      }
     }
     spark.stop()
   }
