@@ -53,7 +53,7 @@ On start-up, the application by default loads and cleans all of the dataset CSV 
 Once all pre-processing is completed, the Driver program pauses and waits for user input, as shown below:
 
 <p align="center">
- <img width="700" alt="Driver program menu" src="https://user-images.githubusercontent.com/19466657/129791343-743173d1-35cd-49ba-914f-e3d88d2f298f.png">
+ <img width="700" alt="Driver program menu" src="https://user-images.githubusercontent.com/19466657/130142816-de29f97b-fa35-4b00-963d-27728fd01742.png">
 </p>
 
 Selecting any of the option will run the corresponding query, where details concerning the query are documented in the source code in Driver.main().
