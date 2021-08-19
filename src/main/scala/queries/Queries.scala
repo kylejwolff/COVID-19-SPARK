@@ -19,7 +19,7 @@ object Queries {
 
     private def getQuarter(start_date: LocalDate=quarters_start_date): LocalDate => Int = {
         // Returns 1 - 4 for Q1 to Q4 in 2020, and 5 - 6 for Q1 - Q2 in 2021
-        (date: LocalDate) => (date.getMonthValue() / 3) + 1 + (date.getYear() - start_date.getYear()) * 4
+        (date: LocalDate) => ((date.getMonthValue()-1) / 3) + 1 + (date.getYear() - start_date.getYear()) * 4
     }
 
     def mergeGlobal(confirmed_df: DataFrame, deaths_df: DataFrame, recovered_df: DataFrame): DataFrame = {
