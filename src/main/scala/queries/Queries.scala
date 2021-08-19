@@ -169,13 +169,13 @@ object Queries {
         .select(usq1min("country"), (usq1max("max(confirmed)") - usq1min("min(confirmed)")))
         .withColumnRenamed("(max(confirmed) - min(confirmed))", "q1_confirmed")
         val usq1percent = usq1con.join(us_pop, (us_pop("country") <=> usq1con("country")), "inner")
-        .select(usq1con("country"), (usq1con("q1_confirmed") / us_pop("population")))
+        .select(usq1con("country"), usq1con("q1_confirmed").as("confirmed"), (usq1con("q1_confirmed") / us_pop("population")))
         .withColumnRenamed("(q1_confirmed / population)", "% of new cases per capita")
 
         //US Q2
         val usq2 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
         // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("03/31/2020","06/30/2020"))
-        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-03-31","2020-06-30"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-04-01","2020-06-30"))
         val usq2min = usq2.select(usq2("country"), usq2("observed_date"), usq2("confirmed"))
         .groupBy("country").min("confirmed")
         val usq2max = usq2.select(usq2("country"), usq2("observed_date"), usq2("confirmed"))
@@ -184,13 +184,13 @@ object Queries {
         .select(usq2min("country"), (usq2max("max(confirmed)") - usq2min("min(confirmed)")))
         .withColumnRenamed("(max(confirmed) - min(confirmed))", "q2_confirmed")
         val usq2percent = usq2con.join(us_pop, (us_pop("country") <=> usq2con("country")), "inner")
-        .select(usq2con("country"), (usq2con("q2_confirmed") / us_pop("population")))
+        .select(usq2con("country"), usq2con("q2_confirmed").as("confirmed"), (usq2con("q2_confirmed") / us_pop("population")))
         .withColumnRenamed("(q2_confirmed / population)", "% of new cases per capita")
 
         //US Q3
         val usq3 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
         // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("06/30/2020","08/30/2020"))
-        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-06-30","2020-08-30"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-07-01","2020-09-30"))
         val usq3min = usq3.select(usq3("country"), usq3("observed_date"), usq3("confirmed"))
         .groupBy("country").min("confirmed")
         val usq3max = usq3.select(usq3("country"), usq3("observed_date"), usq3("confirmed"))
@@ -199,13 +199,13 @@ object Queries {
         .select(usq3min("country"), (usq3max("max(confirmed)") - usq3min("min(confirmed)")))
         .withColumnRenamed("(max(confirmed) - min(confirmed))", "q3_confirmed")
         val usq3percent = usq3con.join(us_pop, (us_pop("country") <=> usq3con("country")), "inner")
-        .select(usq3con("country"), (usq3con("q3_confirmed") / us_pop("population")))
+        .select(usq3con("country"), usq3con("q3_confirmed").as("confirmed"), (usq3con("q3_confirmed") / us_pop("population")))
         .withColumnRenamed("(q3_confirmed / population)", "% of new cases per capita")
 
         //US Q4
         val usq4 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
         // .where(usq("country") === "US" && usq("observed_date").like("%2020") && usq("observed_date").between("08/30/2020","12/31/2020"))
-        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-08-30","2020-12-31"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2020")  */&& usq("observed_date").between("2020-10-01","2020-12-31"))
         val usq4min = usq4.select(usq4("country"), usq4("observed_date"), usq4("confirmed"))
         .groupBy("country").min("confirmed")
         val usq4max = usq4.select(usq4("country"), usq4("observed_date"), usq4("confirmed"))
@@ -214,7 +214,7 @@ object Queries {
         .select(usq4min("country"), (usq4max("max(confirmed)") - usq4min("min(confirmed)")))
         .withColumnRenamed("(max(confirmed) - min(confirmed))", "q4_confirmed")
         val usq4percent = usq4con.join(us_pop, (us_pop("country") <=> usq4con("country")), "inner")
-        .select(usq4con("country"), (usq4con("q4_confirmed") / us_pop("population")))
+        .select(usq4con("country"), usq4con("q4_confirmed").as("confirmed"), (usq4con("q4_confirmed") / us_pop("population")))
         .withColumnRenamed("(q4_confirmed / population)", "% of new cases per capita")
 
         //US Q5
@@ -229,13 +229,13 @@ object Queries {
         .select(usq5min("country"), (usq5max("max(confirmed)") - usq5min("min(confirmed)")))
         .withColumnRenamed("(max(confirmed) - min(confirmed))", "q5_confirmed")
         val usq5percent = usq5con.join(us_pop, (us_pop("country") <=> usq5con("country")), "inner")
-        .select(usq5con("country"), (usq5con("q5_confirmed") / us_pop("population")))
+        .select(usq5con("country"), usq5con("q5_confirmed").as("confirmed"), (usq5con("q5_confirmed") / us_pop("population")))
         .withColumnRenamed("(q5_confirmed / population)", "% of new cases per capita")
 
         //US Q6
         val usq6 = usq.select(usq("country"), usq("observed_date"), usq("confirmed"))
         // .where(usq("country") === "US" && usq("observed_date").like("%2021") && usq("observed_date").between("03/31/2021","06/30/2021"))
-        .where(usq("country") === "US" /* && usq("observed_date").like("%2021")  */&& usq("observed_date").between("2021-03-31","2021-06-30"))
+        .where(usq("country") === "US" /* && usq("observed_date").like("%2021")  */&& usq("observed_date").between("2021-04-01","2021-06-30"))
         val usq6min = usq6.select(usq6("country"), usq6("observed_date"), usq6("confirmed"))
         .groupBy("country").min("confirmed")
         val usq6max = usq6.select(usq6("country"), usq6("observed_date"), usq6("confirmed"))
@@ -244,7 +244,7 @@ object Queries {
         .select(usq6min("country"), (usq6max("max(confirmed)") - usq6min("min(confirmed)")))
         .withColumnRenamed("(max(confirmed) - min(confirmed))", "q6_confirmed")
         val usq6percent = usq6con.join(us_pop, (us_pop("country") <=> usq6con("country")), "inner")
-        .select(usq6con("country"), (usq6con("q6_confirmed") / us_pop("population")))
+        .select(usq6con("country"), usq6con("q6_confirmed").as("confirmed"), (usq6con("q6_confirmed") / us_pop("population")))
         .withColumnRenamed("(q6_confirmed / population)", "% of new cases per capita")
 
         val uspercent = usq1percent.union(usq2percent).union(usq3percent).union(usq4percent).union(usq5percent).union(usq6percent)
